@@ -17,7 +17,7 @@ if __name__ == '__main__':
     X[:m,0] = 1
     X[:m,1], X[:m,2] = np.random.multivariate_normal(mean, cov, m).T
 
-    mean = [10, 10]
+    mean = [25, 25]
     cov = [[75,0],[0,75]]
     X[m:,0] = -1
     X[m:,1], X[m:,2] = np.random.multivariate_normal(mean, cov, N-m).T
@@ -30,16 +30,33 @@ if __name__ == '__main__':
     clf = svm.SVC(kernel="linear")
     clf.fit(X[:,1:], X[:,0])
 
+    print 'support vectors: \n', clf.support_vectors_
+    print 'support vector indices: ', clf.support_
+    print 'coefficients of support vectors(whose sign are reversed): ', clf.dual_coef_
+    print 'constants in dicision funcitons: ', clf.intercept_
+
+    sv = X[clf.support_, 1:]
+    yi = X[clf.support_[0], 0]
+    xi = X[clf.support_[0], 1:]
+    coef = (-1*clf.dual_coef_)
+    times = coef.T * sv
+    b = yi - np.sum(np.dot(xi,times.T))
+    print 'calculted bias b: ', b
+
     I = np.arange(-50,50)
     J = np.arange(-50,50)
     i,j = np.meshgrid(I,J)
     K = np.zeros((100,100))
+    B = np.zeros((100,100))
     for s in range(100):
         for t in range(100):
             K[s,t] = clf.decision_function([i[s,t],j[s,t]])
+            B[s,t] = clf.decision_function([i[s,t],j[s,t]]) - b
     CS = plt.contour(I, J, K)
     plt.clabel(CS)
-        
+    CSB = plt.contour(I, J, B, 1, colors='k')
+
     plt.plot(X[X[:,0]>0,1],X[X[:,0]>0,2], "bo")
     plt.plot(X[X[:,0]<0,1],X[X[:,0]<0,2], "ro")
+
     plt.show()
