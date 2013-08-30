@@ -6,57 +6,58 @@ from matplotlib import pyplot as plt
 from matplotlib import lines
 from sklearn import svm
 
+import pyximport
+pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
+from kernel import *
+from mlutil import *
+
 if __name__ == '__main__':
-    N = 1000
+    N = 500
     rate = 10.
-    X = np.zeros((N,3))
+    X = np.zeros((N,2))
+    label = np.zeros(N)
     m = int( N * ( 1 / (rate+1) ) )
 
     mean = [-25, -25]
     cov = [[50,0],[0,50]]
-    X[:m,0] = 1
-    X[:m,1], X[:m,2] = np.random.multivariate_normal(mean, cov, m).T
+    label[:m] = 1
+    X[:m,0], X[:m,1] = np.random.multivariate_normal(mean, cov, m).T
 
     mean = [25, 25]
     cov = [[75,0],[0,75]]
-    X[m:,0] = -1
-    X[m:,1], X[m:,2] = np.random.multivariate_normal(mean, cov, N-m).T
+    label[m:] = -1
+    X[m:,0], X[m:,1] = np.random.multivariate_normal(mean, cov, N-m).T
 
-    print "positive: ", len(X[X[:,0]>0,:])
-    print "negative: ", len(X[X[:,0]<0,:])
+    print "positive: ", m
+    print "negative: ", N-m
 
-    #clf = svm.SVC(kernel="poly", degree=2)
-    #clf = svm.SVC(kernel="rbf", gamma=0.01)
-    clf = svm.SVC(kernel="linear")
-    clf.fit(X[:,1:], X[:,0])
+    kernel = GaussKernel(0.005)
+    #kernel = FloatLinearKernel()
+    gram = kernel.gram(X)
+    clf = svm.SVC(kernel='precomputed')
+    clf.fit(gram, label)
 
-    print 'support vectors: \n', clf.support_vectors_
+    cclf = svm.SVC(kernel="rbf", gamma=0.005)
+    #cclf = svm.SVC(kernel='linear')
+    cclf.fit(X,label)
+
     print 'support vector indices: ', clf.support_
     print 'coefficients of support vectors(whose sign are reversed): ', clf.dual_coef_
     print 'constants in dicision funcitons: ', clf.intercept_
 
-    sv = X[clf.support_, 1:]
-    yi = X[clf.support_[0], 0]
-    xi = X[clf.support_[0], 1:]
-    coef = (-1*clf.dual_coef_)
-    times = coef.T * sv
-    b = yi - np.sum(np.dot(xi,times.T))
+    yi = label[clf.support_[0]]
+    xi = X[clf.support_[0], :]
+    sv = X[clf.support_, :]
+    coef = clf.dual_coef_[0]
+    b = yi + np.sum([ coef[j] * kernel.val(xi, xj) for j,xj in enumerate(sv) ])
+    f = create_dicision_function(kernel, -coef, label, sv)
     print 'calculted bias b: ', b
+    print 'df calculted bias b: ', f(np.array([0.,0.]))
 
-    I = np.arange(-50,50)
-    J = np.arange(-50,50)
-    i,j = np.meshgrid(I,J)
-    K = np.zeros((100,100))
-    B = np.zeros((100,100))
-    for s in range(100):
-        for t in range(100):
-            K[s,t] = clf.decision_function([i[s,t],j[s,t]])
-            B[s,t] = clf.decision_function([i[s,t],j[s,t]]) - b
-    CS = plt.contour(I, J, K)
-    plt.clabel(CS)
-    CSB = plt.contour(I, J, B, 1, colors='k')
+    plt = draw_contour(f, [-50,50,50,-50], plot=plt, linewidths=3, colors='r')
+    plt = draw_contour(cclf.decision_function, [-50,50,50,-50], plot=plt, colors='b')
 
-    plt.plot(X[X[:,0]>0,1],X[X[:,0]>0,2], "bo")
-    plt.plot(X[X[:,0]<0,1],X[X[:,0]<0,2], "ro")
-
+    plt.plot(X[:m,0],X[:m,1], "bo")
+    plt.plot(X[m:,0],X[m:,1], "ro")
+    plt.plot(X[clf.support_,0],X[clf.support_,1], "go")
     plt.show()
