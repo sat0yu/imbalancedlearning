@@ -37,7 +37,7 @@ def draw_contour(f, coodinates, plot=None, density=1., **kwargs):
 
 def create_dicision_function(kernel, alpha, label, sv):
     cdef int j, nSV = len(sv)
-    cdef float b = float( -label[0] )
+    cdef double b = float( -label[0] )
     b -= np.sum([ alpha[j]*label[j]*kernel.val(sv[0],sv[j]) for j in range(nSV) ])
 
     def df(np.ndarray[DTYPE_float_t, ndim=1] x):
