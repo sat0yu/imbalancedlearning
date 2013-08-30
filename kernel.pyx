@@ -123,3 +123,11 @@ class GaussKernel(FloatKernel):
     def val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
         cdef double dist = np.linalg.norm(vec1-vec2)
         return np.exp(-self.__beta*(dist**2))
+
+class PolyKernel(FloatKernel):
+    def __init__(self, int degree, double coef0=0.):
+        self.__degree = degree
+        self.__coef0 = coef0
+
+    def val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
+        return (np.dot(vec1, vec2) + self.__coef0)**self.__degree

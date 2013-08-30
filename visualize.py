@@ -12,8 +12,8 @@ from kernel import *
 from mlutil import *
 
 if __name__ == '__main__':
-    N = 500
-    rate = 10.
+    N = 1000
+    rate = 100.
     X = np.zeros((N,2))
     label = np.zeros(N)
     m = int( N * ( 1 / (rate+1) ) )
@@ -31,19 +31,12 @@ if __name__ == '__main__':
     print "positive: ", m
     print "negative: ", N-m
 
-    kernel = GaussKernel(0.005)
+    kernel = GaussKernel(0.0010)
+    kernel = PolyKernel(3)
     #kernel = FloatLinearKernel()
     gram = kernel.gram(X)
     clf = svm.SVC(kernel='precomputed')
     clf.fit(gram, label)
-
-    cclf = svm.SVC(kernel="rbf", gamma=0.005)
-    #cclf = svm.SVC(kernel='linear')
-    cclf.fit(X,label)
-
-    print 'support vector indices: ', clf.support_
-    print 'coefficients of support vectors(whose sign are reversed): ', clf.dual_coef_
-    print 'constants in dicision funcitons: ', clf.intercept_
 
     yi = label[clf.support_[0]]
     xi = X[clf.support_[0], :]
@@ -52,10 +45,8 @@ if __name__ == '__main__':
     b = yi + np.sum([ coef[j] * kernel.val(xi, xj) for j,xj in enumerate(sv) ])
     f = create_dicision_function(kernel, -coef, label, sv)
     print 'calculted bias b: ', b
-    print 'df calculted bias b: ', f(np.array([0.,0.]))
 
-    plt = draw_contour(f, [-50,50,50,-50], plot=plt, linewidths=3, colors='r')
-    plt = draw_contour(cclf.decision_function, [-50,50,50,-50], plot=plt, colors='b')
+    plt = draw_contour(f, [-50,50,50,-50], plot=plt, density=0.5)
 
     plt.plot(X[:m,0],X[:m,1], "bo")
     plt.plot(X[m:,0],X[m:,1], "ro")
