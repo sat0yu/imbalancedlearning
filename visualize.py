@@ -12,41 +12,45 @@ from kernel import *
 from mlutil import *
 
 if __name__ == '__main__':
-    N = 1000
-    rate = 100.
+    N = 300
+    rate = 30.
     X = np.zeros((N,2))
     label = np.zeros(N)
     m = int( N * ( 1 / (rate+1) ) )
 
-    mean = [-25, -25]
+    mean = [-10, -10]
+    #mean = [-50, -50]
     cov = [[50,0],[0,50]]
-    label[:m] = 1
+    label[:m] = 1.
     X[:m,0], X[:m,1] = np.random.multivariate_normal(mean, cov, m).T
 
     mean = [25, 25]
     cov = [[75,0],[0,75]]
-    label[m:] = -1
+    label[m:] = -1.
     X[m:,0], X[m:,1] = np.random.multivariate_normal(mean, cov, N-m).T
 
     print "positive: ", m
     print "negative: ", N-m
 
     kernel = GaussKernel(0.0010)
-    kernel = PolyKernel(3)
+    #kernel = PolyKernel(7)
     #kernel = FloatLinearKernel()
     gram = kernel.gram(X)
     clf = svm.SVC(kernel='precomputed')
+    print "precumputed", clf
     clf.fit(gram, label)
 
     yi = label[clf.support_[0]]
     xi = X[clf.support_[0], :]
-    sv = X[clf.support_, :]
-    coef = clf.dual_coef_[0]
-    b = yi + np.sum([ coef[j] * kernel.val(xi, xj) for j,xj in enumerate(sv) ])
-    f = create_dicision_function(kernel, -coef, label, sv)
-    print 'calculted bias b: ', b
+    f = create_dicision_function(kernel, clf, X, label)
 
+    cclf = svm.SVC(kernel="rbf", gamma=0.0010)
+    cclf.fit(X,label)
+    print "rbf", cclf
+    print "rbf coef:\n", cclf.dual_coef_
+    print "rbf constant: ", cclf.intercept_
     plt = draw_contour(f, [-50,50,50,-50], plot=plt, density=0.5)
+    plt = draw_contour(cclf.decision_function, [-50,50,50,-50], plot=plt, density=0.5, colors="k")
 
     plt.plot(X[:m,0],X[:m,1], "bo")
     plt.plot(X[m:,0],X[m:,1], "ro")
