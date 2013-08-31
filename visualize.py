@@ -19,7 +19,6 @@ if __name__ == '__main__':
     m = int( N * ( 1 / (rate+1) ) )
 
     mean = [-10, -10]
-    #mean = [-50, -50]
     cov = [[50,0],[0,50]]
     label[:m] = 1.
     X[:m,0], X[:m,1] = np.random.multivariate_normal(mean, cov, m).T
@@ -37,20 +36,12 @@ if __name__ == '__main__':
     #kernel = FloatLinearKernel()
     gram = kernel.gram(X)
     clf = svm.SVC(kernel='precomputed')
-    print "precumputed", clf
     clf.fit(gram, label)
 
     yi = label[clf.support_[0]]
     xi = X[clf.support_[0], :]
     f = create_dicision_function(kernel, clf, X, label)
-
-    cclf = svm.SVC(kernel="rbf", gamma=0.0010)
-    cclf.fit(X,label)
-    print "rbf", cclf
-    print "rbf coef:\n", cclf.dual_coef_
-    print "rbf constant: ", cclf.intercept_
     plt = draw_contour(f, [-50,50,50,-50], plot=plt, density=0.5)
-    plt = draw_contour(cclf.decision_function, [-50,50,50,-50], plot=plt, density=0.5, colors="k")
 
     plt.plot(X[:m,0],X[:m,1], "bo")
     plt.plot(X[m:,0],X[m:,1], "ro")

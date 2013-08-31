@@ -37,16 +37,16 @@ def draw_contour(f, coodinates, plot=None, density=1., **kwargs):
 
 def create_dicision_function(kernel, clf, X, label):
     alpha = -clf.dual_coef_[0]
-    print "precomputed coef\n", alpha
+    #print "precomputed coef\n", alpha
     sv = X[clf.support_, :]
     mIdx = clf.support_[ np.abs(alpha[:]) < 1. ]
-    print mIdx
+    #print mIdx
 
     b = 0.
     for i in mIdx:
         b += label[i] - np.sum([ alpha[j]*kernel.val(X[i],sv[j]) for j in range(len(sv)) ])
     b = b / len(mIdx)
-    print "precomputed contant: ", b
+    #print "precomputed contant: ", b
 
     def df(np.ndarray[DTYPE_float_t, ndim=1] x):
         return np.sum([ alpha[i]*kernel.val(x,sv[i]) for i in range(len(sv)) ]) + b
