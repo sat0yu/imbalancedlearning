@@ -13,7 +13,7 @@ cdef class IntKernel:
     #__metaclass__ = ABCMeta
 
     #@abstractmethod
-    #cpdef int val(self, np.ndarray[DTYPE_int_t, ndim=2] X1, np.ndarray[DTYPE_int_t, ndim=2] X2): pass
+    cpdef int val(self, np.ndarray[DTYPE_int_t, ndim=1] X1, np.ndarray[DTYPE_int_t, ndim=1] X2): pass
 
     cpdef np.ndarray gram(self, np.ndarray[DTYPE_int_t, ndim=2] X):
         cdef int N = len(X)
@@ -38,7 +38,7 @@ cdef class FloatKernel:
     #__metaclass__ = ABCMeta
 
     #@abstractmethod
-    #cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=2] X1, np.ndarray[DTYPE_float_t, ndim=2] X2): pass
+    cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] X1, np.ndarray[DTYPE_float_t, ndim=1] X2): pass
 
     cpdef np.ndarray gram(self, np.ndarray[DTYPE_float_t, ndim=2] X):
         cdef int N = len(X)

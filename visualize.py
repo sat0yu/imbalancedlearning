@@ -13,7 +13,7 @@ from mlutil import *
 
 if __name__ == '__main__':
     N = 1000
-    rate = 30.
+    rate = 100.
     X = np.zeros((N,2))
     label = np.zeros(N)
     m = int( N * ( 1 / (rate+1) ) )
@@ -31,17 +31,17 @@ if __name__ == '__main__':
     print "positive: ", m
     print "negative: ", N-m
 
-    #kernel = GaussKernel(0.0010)
+    kernel = GaussKernel(0.0010)
     #kernel = PolyKernel(7)
-    kernel = FloatLinearKernel()
+    #kernel = FloatLinearKernel()
     gram = kernel.gram(X)
     clf = svm.SVC(kernel='precomputed')
     clf.fit(gram, label)
 
     yi = label[clf.support_[0]]
     xi = X[clf.support_[0], :]
-    f = create_dicision_function(kernel, clf, X, label)
-    plt = draw_contour(f, [-50,50,50,-50], plot=plt, density=0.5)
+    f = DecisionFunction(kernel, clf, X, label)
+    plt = draw_contour(f.eval, [-50,50,50,-50], plot=plt, density=0.5)
 
     plt.plot(X[:m,0],X[:m,1], "bo")
     plt.plot(X[m:,0],X[m:,1], "ro")

@@ -35,23 +35,35 @@ def draw_contour(f, coodinates, plot=None, density=1., **kwargs):
 
     return plot
 
-def create_dicision_function(kernel, clf, X, label):
-    alpha = -clf.dual_coef_[0]
-    #print "precomputed coef\n", alpha
-    sv = X[clf.support_, :]
-    mIdx = clf.support_[ np.abs(alpha[:]) < 1. ]
-    #print mIdx
+cdef class DecisionFunction:
+    cdef np.ndarray alpha, sv
+    cdef double b
+    cdef int nSV
+    cdef object kernel
 
-    b = 0.
-    for i in mIdx:
-        b += label[i] - np.sum([ alpha[j]*kernel.val(X[i],sv[j]) for j in range(len(sv)) ])
-    b = b / len(mIdx)
-    #print "precomputed contant: ", b
+    def __init__(self, kernel, clf, X, label):
+        self.alpha = -clf.dual_coef_[0]
+        #print "precomputed coef\n", alpha
+        self.sv = X[clf.support_, :]
+        self.nSV = len(self.sv)
+        self.kernel = kernel
 
-    def df(np.ndarray[DTYPE_float_t, ndim=1] x):
-        return np.sum([ alpha[i]*kernel.val(x,sv[i]) for i in range(len(sv)) ]) + b
+        clf.support_[ np.abs(self.alpha[:]) < 1. ]
+        mIdx = clf.support_[ np.abs(self.alpha[:]) < 1. ]
+        #print mIdx
 
-    return df
+        self.b = 0.
+        for i in mIdx:
+            self.b += label[i] - np.sum([ self.alpha[j]*kernel.val(X[i],self.sv[j]) for j in range(self.nSV) ])
+        self.b = self.b / len(mIdx)
+        #print "precomputed contant: ", b
+
+    cpdef double eval(self, np.ndarray[DTYPE_float_t, ndim=1] x):
+        cdef np.ndarray[DTYPE_float_t, ndim=1] alpha = self.alpha
+        cdef np.ndarray[DTYPE_float_t, ndim=2] sv = self.sv
+        cdef int i
+
+        return np.sum([ alpha[i]*self.kernel.val(x,sv[i]) for i in range(self.nSV) ]) + self.b
 
 def lPCA(data, d):
     N = len(data)
