@@ -12,7 +12,7 @@ from kernel import *
 from mlutil import *
 
 if __name__ == '__main__':
-    N = 300
+    N = 1000
     rate = 30.
     X = np.zeros((N,2))
     label = np.zeros(N)
@@ -31,9 +31,9 @@ if __name__ == '__main__':
     print "positive: ", m
     print "negative: ", N-m
 
-    kernel = GaussKernel(0.0010)
+    #kernel = GaussKernel(0.0010)
     #kernel = PolyKernel(7)
-    #kernel = FloatLinearKernel()
+    kernel = FloatLinearKernel()
     gram = kernel.gram(X)
     clf = svm.SVC(kernel='precomputed')
     clf.fit(gram, label)

@@ -9,13 +9,13 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
-class IntKernel():
-    __metaclass__ = ABCMeta
+cdef class IntKernel:
+    #__metaclass__ = ABCMeta
 
-    @abstractmethod
-    def val(self, np.ndarray[DTYPE_int_t, ndim=2] X1, np.ndarray[DTYPE_int_t, ndim=2] X2): pass
+    #@abstractmethod
+    #cpdef int val(self, np.ndarray[DTYPE_int_t, ndim=2] X1, np.ndarray[DTYPE_int_t, ndim=2] X2): pass
 
-    def gram(self, np.ndarray[DTYPE_int_t, ndim=2] X):
+    cpdef np.ndarray gram(self, np.ndarray[DTYPE_int_t, ndim=2] X):
         cdef int N = len(X)
         cdef np.ndarray[DTYPE_float_t, ndim=2] gm = np.identity(N, dtype=DTYPE_float)
         cdef int i,j
@@ -24,7 +24,7 @@ class IntKernel():
                 gm[j][i] = gm[i][j] = self.val(X[i], X[j])
         return gm
 
-    def matrix(self, np.ndarray[DTYPE_int_t, ndim=2] X1, np.ndarray[DTYPE_int_t, ndim=2] X2):
+    cpdef np.ndarray matrix(self, np.ndarray[DTYPE_int_t, ndim=2] X1, np.ndarray[DTYPE_int_t, ndim=2] X2):
         cdef int N = len(X1)
         cdef int M = len(X2)
         cdef np.ndarray[DTYPE_float_t, ndim=2] mat = np.zeros((N,M), dtype=DTYPE_float)
@@ -34,13 +34,13 @@ class IntKernel():
                 mat[i][j] = self.val(X1[i], X2[j])
         return mat
 
-class FloatKernel():
-    __metaclass__ = ABCMeta
+cdef class FloatKernel:
+    #__metaclass__ = ABCMeta
 
-    @abstractmethod
-    def val(self, np.ndarray[DTYPE_float_t, ndim=2] X1, np.ndarray[DTYPE_float_t, ndim=2] X2): pass
+    #@abstractmethod
+    #cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=2] X1, np.ndarray[DTYPE_float_t, ndim=2] X2): pass
 
-    def gram(self, np.ndarray[DTYPE_float_t, ndim=2] X):
+    cpdef np.ndarray gram(self, np.ndarray[DTYPE_float_t, ndim=2] X):
         cdef int N = len(X)
         cdef np.ndarray[DTYPE_float_t, ndim=2] gm = np.identity(N, dtype=DTYPE_float)
         cdef int i,j
@@ -49,7 +49,7 @@ class FloatKernel():
                 gm[j][i] = gm[i][j] = self.val(X[i], X[j])
         return gm
 
-    def matrix(self, np.ndarray[DTYPE_float_t, ndim=2] X1, np.ndarray[DTYPE_float_t, ndim=2] X2):
+    cpdef np.ndarray matrix(self, np.ndarray[DTYPE_float_t, ndim=2] X1, np.ndarray[DTYPE_float_t, ndim=2] X2):
         cdef int N = len(X1)
         cdef int M = len(X2)
         cdef np.ndarray[DTYPE_float_t, ndim=2] mat = np.zeros((N,M), dtype=DTYPE_float)
@@ -59,12 +59,12 @@ class FloatKernel():
                 mat[i][j] = self.val(X1[i], X2[j])
         return mat
 
-class FloatLinearKernel(FloatKernel):
-    def val(self, np.ndarray[DTYPE_float_t, ndim=1] x, np.ndarray[DTYPE_float_t, ndim=1] y):
+cdef class FloatLinearKernel(FloatKernel):
+    cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] x, np.ndarray[DTYPE_float_t, ndim=1] y):
         return np.dot(x,y)
 
-class IntLinearKernel(IntKernel):
-    def val(self, np.ndarray[DTYPE_int_t, ndim=1] x, np.ndarray[DTYPE_int_t, ndim=1] y):
+cdef class IntLinearKernel(IntKernel):
+    cpdef int val(self, np.ndarray[DTYPE_int_t, ndim=1] x, np.ndarray[DTYPE_int_t, ndim=1] y):
         return np.dot(x,y)
 
 class WeightendHammingKernel(IntKernel):
@@ -116,18 +116,23 @@ class HammingKernel(IntKernel):
     def val(self, np.ndarray[DTYPE_int_t, ndim=1] x, np.ndarray[DTYPE_int_t, ndim=1] y):
         return sum( x == y )**self.__d
 
-class GaussKernel(FloatKernel):
+cdef class GaussKernel(FloatKernel):
+    cdef double __beta
+
     def __init__(self, double beta):
         self.__beta = beta
 
-    def val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
+    cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
         cdef double dist = np.linalg.norm(vec1-vec2)
         return np.exp(-self.__beta*(dist**2))
 
-class PolyKernel(FloatKernel):
+cdef class PolyKernel(FloatKernel):
+    cdef int __degree
+    cdef double __coef0
+
     def __init__(self, int degree, double coef0=0.):
         self.__degree = degree
         self.__coef0 = coef0
 
-    def val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
+    cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
         return (np.dot(vec1, vec2) + self.__coef0)**self.__degree
