@@ -40,7 +40,7 @@ if __name__ == '__main__':
     label[:m] = 1.
     X[:m,0], X[:m,1] = np.random.multivariate_normal(mean, cov, m).T
 
-    mean = [25, 25]
+    mean = [10, 10]
     cov = [[75,0],[0,75]]
     label[m:] = -1.
     X[m:,0], X[m:,1] = np.random.multivariate_normal(mean, cov, N-m).T
@@ -62,24 +62,19 @@ if __name__ == '__main__':
     gram = kernel.gram(X)
     clf = svm.SVC(kernel='precomputed')
 
-    fig, axes = plt.subplots(1, 2)
-
     clf.fit(gram, label)
     yi = label[clf.support_[0]]
     xi = X[clf.support_[0], :]
     f = DecisionFunction(kernel, clf, X, label)
-    axes[0] = draw_contour(f.eval, [-50,50,50,-50], plot=axes[0], density=0.5)
-    axes[0].plot(X[:m,0],X[:m,1], "bo")
-    axes[0].plot(X[m:,0],X[m:,1], "ro")
-    axes[0].plot(X[clf.support_,0],X[clf.support_,1], "go")
+    plt = draw_contour(f.eval, [-50,50,50,-50], (-1, 0, 1), plot=plt, density=1.0, colors='b')
 
     clf.fit(gram, label, sample_weight=weights)
     yi = label[clf.support_[0]]
     xi = X[clf.support_[0], :]
     f = DecisionFunction(kernel, clf, X, label)
-    axes[1] = draw_contour(f.eval, [-50,50,50,-50], plot=axes[1], density=0.5)
-    axes[1].plot(X[:m,0],X[:m,1], "bo")
-    axes[1].plot(X[m:,0],X[m:,1], "ro")
-    axes[1].plot(X[clf.support_,0],X[clf.support_,1], "go")
+    plt = draw_contour(f.eval, [-50,50,50,-50], (-1, 0, 1), plot=plt, density=1.0, colors='r')
+
+    plt.plot(X[:m,0],X[:m,1], "ko")
+    plt.plot(X[m:,0],X[m:,1], "kx")
 
     plt.show()

@@ -9,7 +9,7 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
-def draw_contour(f, coodinates, plot=None, density=1., **kwargs):
+def draw_contour(f, coodinates, *args, plot=None, density=1., **kwargs):
     cdef int p, q
     cdef int x0 = coodinates[0], y0 = coodinates[1]
     cdef int x1 = coodinates[2], y1 = coodinates[3]
@@ -29,9 +29,9 @@ def draw_contour(f, coodinates, plot=None, density=1., **kwargs):
     if plot is None:
         from matplotlib import pyplot as plot
 
-    CS = plot.contour(I, J, K, **kwargs)
+    CS = plot.contour(I, J, K, *args, **kwargs)
     plot.clabel(CS)
-    plot.contour(I, J, K, (0,), linewidths=2)
+    plot.contour(I, J, K, (0,), linewidths=2, **kwargs)
 
     return plot
 
