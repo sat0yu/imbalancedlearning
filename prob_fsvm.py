@@ -28,53 +28,94 @@ class KernelDensityEstimater():
         buf = [ self.kernel.val(x, xi) for xi in self.sample ]
         return sum(buf) / self.nConst
 
-if __name__ == '__main__':
-    N = 1000
-    rate = 100.
-    X = np.zeros((N,2))
-    label = np.zeros(N)
-    m = int( N * ( 1 / (rate+1) ) )
+def createSamplesFromNormalDistribution(numTrain, numTest, dim=2, classRatio=1.):
+    #[ToDo] should modisy to assign means ans covariances.
+
+    X = np.zeros((numTrain,dim))
+    Y = np.zeros((numTest,dim))
+    label = np.zeros(numTrain)
+    answer = np.zeros(numTest)
+    mTrain = int( numTrain * ( 1 / (classRatio+1) ) )
+    mTest = int( numTest * ( 1 / (classRatio+1) ) )
 
     mean = [-10, -10]
-    cov = [[50,0],[0,50]]
-    label[:m] = 1.
-    X[:m,0], X[:m,1] = np.random.multivariate_normal(mean, cov, m).T
+    cov = [[50,0],[0,100]]
+    label[:mTrain] = 1
+    answer[:mTest] = 1
+    X[:mTrain,0], X[:mTrain,1] = np.random.multivariate_normal(mean, cov, mTrain).T
+    Y[:mTest,0], Y[:mTest,1] = np.random.multivariate_normal(mean, cov, mTest).T
 
     mean = [10, 10]
-    cov = [[75,0],[0,75]]
-    label[m:] = -1.
-    X[m:,0], X[m:,1] = np.random.multivariate_normal(mean, cov, N-m).T
+    cov = [[100,0],[0,50]]
+    label[mTrain:] = -1
+    answer[mTest:] = -1
+    X[mTrain:,0], X[mTrain:,1] = np.random.multivariate_normal(mean, cov, numTrain-mTrain).T
+    Y[mTest:,0], Y[mTest:,1] = np.random.multivariate_normal(mean, cov, numTest-mTest).T
 
-    print "positive: ", m
-    print "negative: ", N-m
+    print "given positive samples (train): ", mTrain
+    print "given negative samples (train): ", numTrain-mTrain
+    print "given positive samples (test): ", mTest
+    print "given negative samples (test): ", numTest-mTest
+
+    return (X,label,Y,answer)
+
+def evaluation(predict, answer, posLabel=1, negLabel=-1):
+    idxPos = answer[:]==posLabel
+    idxNeg = answer[:]==negLabel
+    numPos = len(answer[idxPos])
+    numNeg = len(answer[idxNeg])
+
+    acc = sum(predict == answer) / float(len(answer))
+    accPos = sum(predict[idxPos] == answer[idxPos]) / float(numPos)
+    accNeg = sum(predict[idxNeg] == answer[idxNeg]) / float(numNeg)
+    g = np.sqrt(accPos * accNeg)
+
+    return (acc,accPos,accNeg,g)
+
+def procedure(numTest, numTrain, classRatio):
+    #[ToDo] should modisy to assign dim, magic, and beta param.
+
+    dim = 2
+    mTrain = int( numTrain * ( 1 / (classRatio+1) ) )
+    mTest = int( numTest * ( 1 / (classRatio+1) ) )
+    X,label,Y,answer = createSamplesFromNormalDistribution(numTrain, numTest, dim, classRatio)
 
     magic = 20000
-    kde = KernelDensityEstimater(2, 0.005)
-    kde.estimate(X[:m,:])
-    posWeight = magic*np.array([ kde.prob(xi) for xi in X[:m] ])
+    beta = 0.005
+
+    kde = KernelDensityEstimater(dim, beta)
+    kde.estimate(X[:mTrain,:])
+    posWeight = magic*np.array([ kde.prob(xi) for xi in X[:mTrain] ])
     print posWeight
-    kde.estimate(X[m:,:])
-    negWeight = magic*np.array([ kde.prob(xi) for xi in X[m:] ])
+
+    kde.estimate(X[mTrain:,:])
+    negWeight = magic*np.array([ kde.prob(xi) for xi in X[mTrain:] ])
     print negWeight
     weights = np.r_[posWeight, negWeight]
 
-    kernel = GaussKernel(0.005)
+    kernel = GaussKernel(beta)
     gram = kernel.gram(X)
+    mat = kernel.matrix(Y, X)
+
     clf = svm.SVC(kernel='precomputed')
-
     clf.fit(gram, label)
-    yi = label[clf.support_[0]]
-    xi = X[clf.support_[0], :]
-    f = DecisionFunction(kernel, clf, X, label)
-    plt = draw_contour(f.eval, [-50,50,50,-50], (-1, 0, 1), plot=plt, density=1.0, colors='b')
+    predict = clf.predict(mat)
+    acc,accPos,accNeg,g = evaluation(predict, answer)
+    print "[svm] ", "acc: ", acc
+    print "[svm] ", "acc on pos: ", accPos
+    print "[svm] ", "acc on neg: ", accNeg
+    print "[svm] ", "g-mean: ", g
 
+    clf = svm.SVC(kernel='precomputed')
     clf.fit(gram, label, sample_weight=weights)
-    yi = label[clf.support_[0]]
-    xi = X[clf.support_[0], :]
-    f = DecisionFunction(kernel, clf, X, label)
-    plt = draw_contour(f.eval, [-50,50,50,-50], (-1, 0, 1), plot=plt, density=1.0, colors='r')
+    predict = clf.predict(mat)
+    acc,accPos,accNeg,g = evaluation(predict, answer)
+    print "[prob_fsvm] ", "acc: ", acc
+    print "[prob_fsvm] ", "acc on pos: ", accPos
+    print "[prob_fsvm] ", "acc on neg: ", accNeg
+    print "[prob_fsvm] ", "g-mean: ", g
 
-    plt.plot(X[:m,0],X[:m,1], "ko")
-    plt.plot(X[m:,0],X[m:,1], "kx")
-
-    plt.show()
+if __name__ == '__main__':
+    for cr in [1., 2., 5., 10., 20., 50., 100.]:
+        #procedure(5000, 1000, cr)
+        procedure(1250, 250, cr)
