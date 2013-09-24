@@ -12,21 +12,23 @@ from kernel import *
 from mlutil import *
 
 class KernelDensityEstimater():
-    def __init__(self, dim, beta):
-        self.dim = dim
+    def __init__(self, beta):
         self.variance = 1. / (2 * beta)
         self.kernel = GaussKernel(beta)
 
-    def estimate(self, sample):
+    def fit(self, sample):
         self.sample = sample
-        n = np.sqrt( 2. * np.pi * self.variance )**self.dim
-        h = sample.shape[0]
+        h, dim = sample.shape
+        n = np.sqrt( 2. * np.pi * self.variance )**dim
         self.nConst = n * h
         print "normalize constant: ", self.nConst
 
     def prob(self, x):
         buf = [ self.kernel.val(x, xi) for xi in self.sample ]
         return sum(buf) / self.nConst
+
+    def estimate(self, sample):
+        return np.array([ self.prob(xi) for xi in sample ])
 
 def evaluation(predict, answer, posLabel=1, negLabel=-1):
     idxPos = answer[:]==posLabel
@@ -42,11 +44,7 @@ def evaluation(predict, answer, posLabel=1, negLabel=-1):
     return (acc,accPos,accNeg,g)
 
 def procedure(numTest, numTrain, classRatio):
-    #[ToDo] should modisy to assign dim, magic, and beta param.
-
-    dim = 2
-    mTrain = int( numTrain * ( 1 / (classRatio+1) ) )
-    mTest = int( numTest * ( 1 / (classRatio+1) ) )
+    #[ToDo] in this case, X is supposed to sorted. this assumption should be removed.
 
     mean, cov = [-10, -10], [[50,0],[0,100]]
     posDist = NormalDistribution(mean, cov)
@@ -68,13 +66,13 @@ def procedure(numTest, numTrain, classRatio):
     magic = 20000
     beta = 0.005
 
-    kde = KernelDensityEstimater(dim, beta)
-    kde.estimate(X[:mTrain,:])
-    posWeight = magic*np.array([ kde.prob(xi) for xi in X[:mTrain] ])
+    kde = KernelDensityEstimater(beta)
+    kde.fit(trainset[label[:]==1,1:])
+    posWeight = magic * kde.estimate(trainset[label[:]==1,1:])
     print posWeight
 
-    kde.estimate(X[mTrain:,:])
-    negWeight = magic*np.array([ kde.prob(xi) for xi in X[mTrain:] ])
+    kde.fit(trainset[label[:]==-1,1:])
+    negWeight = magic * kde.estimate(trainset[label[:]==-1,1:])
     print negWeight
     weights = np.r_[posWeight, negWeight]
 
