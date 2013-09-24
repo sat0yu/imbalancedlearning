@@ -28,37 +28,6 @@ class KernelDensityEstimater():
         buf = [ self.kernel.val(x, xi) for xi in self.sample ]
         return sum(buf) / self.nConst
 
-def createSamplesFromNormalDistribution(numTrain, numTest, dim=2, classRatio=1.):
-    #[ToDo] should modisy to assign means ans covariances.
-
-    X = np.zeros((numTrain,dim))
-    Y = np.zeros((numTest,dim))
-    label = np.zeros(numTrain)
-    answer = np.zeros(numTest)
-    mTrain = int( numTrain * ( 1 / (classRatio+1) ) )
-    mTest = int( numTest * ( 1 / (classRatio+1) ) )
-
-    mean = [-10, -10]
-    cov = [[50,0],[0,100]]
-    label[:mTrain] = 1
-    answer[:mTest] = 1
-    X[:mTrain,0], X[:mTrain,1] = np.random.multivariate_normal(mean, cov, mTrain).T
-    Y[:mTest,0], Y[:mTest,1] = np.random.multivariate_normal(mean, cov, mTest).T
-
-    mean = [10, 10]
-    cov = [[100,0],[0,50]]
-    label[mTrain:] = -1
-    answer[mTest:] = -1
-    X[mTrain:,0], X[mTrain:,1] = np.random.multivariate_normal(mean, cov, numTrain-mTrain).T
-    Y[mTest:,0], Y[mTest:,1] = np.random.multivariate_normal(mean, cov, numTest-mTest).T
-
-    print "given positive samples (train): ", mTrain
-    print "given negative samples (train): ", numTrain-mTrain
-    print "given positive samples (test): ", mTest
-    print "given negative samples (test): ", numTest-mTest
-
-    return (X,label,Y,answer)
-
 def evaluation(predict, answer, posLabel=1, negLabel=-1):
     idxPos = answer[:]==posLabel
     idxNeg = answer[:]==negLabel
@@ -78,7 +47,23 @@ def procedure(numTest, numTrain, classRatio):
     dim = 2
     mTrain = int( numTrain * ( 1 / (classRatio+1) ) )
     mTest = int( numTest * ( 1 / (classRatio+1) ) )
-    X,label,Y,answer = createSamplesFromNormalDistribution(numTrain, numTest, dim, classRatio)
+
+    mean, cov = [-10, -10], [[50,0],[0,100]]
+    posDist = NormalDistribution(mean, cov)
+
+    mean, cov = [10, 10], [[100,0],[0,50]]
+    negDist = NormalDistribution(mean, cov)
+
+    id = ImbalancedData(posDist, negDist, classRatio)
+    trainset = id.getSample(numTrain)
+    testset = id.getSample(numTest)
+    label, X = trainset[:,0], trainset[:,1:]
+    answer, Y = testset[:,0], testset[:,1:]
+
+    print "given positive samples (train): ", len(label[label[:]==1])
+    print "given negative samples (train): ", len(label[label[:]==-1])
+    print "given positive samples (test): ", len(answer[answer[:]==1])
+    print "given negative samples (test): ", len(answer[answer[:]==-1])
 
     magic = 20000
     beta = 0.005

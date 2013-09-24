@@ -9,6 +9,35 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
+class NormalDistribution():
+    def __init__(self, mean, cov):
+        self.mean = mean
+        self.cov = cov
+
+    def create(self, num):
+        return np.random.multivariate_normal(self.mean, self.cov, num)
+
+class ImbalancedData():
+    def __init__(self, distPos, distNeg, ratio):
+        self.distPos = distPos
+        self.distNeg = distNeg
+        self.ratio = ratio
+
+    def getSample(self, num, labels=[1,-1], shuffle=False):
+        numPos = int( num * ( 1. / (self.ratio + 1.) ) )
+        numNeg = num - numPos
+
+        posSample = self.distPos.create(numPos)
+        posDataset = np.c_[ [labels[0]]*posSample.shape[0], posSample ]
+        negSample = self.distNeg.create(numNeg)
+        negDataset = np.c_[ [labels[1]]*negSample.shape[0], negSample ]
+
+        returned = np.r_[posDataset, negDataset]
+        if shuffle is True:
+            np.random.shuffle(returned)
+
+        return returned
+
 def draw_contour(f, coodinates, *args, plot=None, density=1., **kwargs):
     cdef int p, q
     cdef int x0 = coodinates[0], y0 = coodinates[1]
