@@ -39,9 +39,10 @@ class DifferentErrorCost():
         return self.clf.predict(mat)
 
 class ProbFuzzySVM():
-    def __init__(self, beta, magic):
+    def __init__(self, beta=1., magic=1., boost=False):
         self.beta = beta
         self.magic = magic
+        self.boost = boost
 
     def fit(self, posData, negData, label=[1,-1]):
         # equip weights based on KDE
@@ -51,6 +52,15 @@ class ProbFuzzySVM():
         posProb = kde.estimate(posData)
         kde.fit(negData)
         negProb = kde.estimate(negData)
+
+        # equip weight og each class
+        cPos, cNeg = 1., 1.
+        if self.boost is True:
+            numPos, numNeg = float(len(posData)), float(len(negData))
+            if numPos < numNeg:
+                cPos, cNeg = 1., numPos / numNeg
+            else:
+                cPos, cNeg = numNeg / numPos, 1.
 
         # create weights array, putting positive's one before negative' one
         self.weights = self.magic * np.r_[posProb, negProb]
@@ -63,7 +73,7 @@ class ProbFuzzySVM():
         self.sample = np.r_[posData, negData]
 
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='precomputed')
+        self.clf = svm.SVC(kernel='precomputed', class_weight={label[0]:cPos, label[1]:cNeg})
         self.kernel = GaussKernel(self.beta)
         gram = self.kernel.gram(self.sample[:,1:])
         self.clf.fit(gram, self.sample[:,0], sample_weight=self.weights)
@@ -115,14 +125,24 @@ def procedure(numTest, numTrain, classRatio):
     print "[DEC] ", "g-mean: ", g
 
     # ProvFuzzySVM
-    pfsvm = ProbFuzzySVM(beta, magic)
+    pfsvm = ProbFuzzySVM(beta=beta, magic=magic)
     pfsvm.fit(X[label[:]==1,:], X[label[:]==-1,:])
     predict = pfsvm.predict(Y)
     acc,accPos,accNeg,g = evaluation(predict, answer)
-    print "[prob_fsvm] ", "acc: ", acc
-    print "[prob_fsvm] ", "acc on pos: ", accPos
-    print "[prob_fsvm] ", "acc on neg: ", accNeg
-    print "[prob_fsvm] ", "g-mean: ", g
+    print "[pfsvm] ", "acc: ", acc
+    print "[pfsvm] ", "acc on pos: ", accPos
+    print "[pfsvm] ", "acc on neg: ", accNeg
+    print "[pfsvm] ", "g-mean: ", g
+
+    # ProvFuzzySVM-CIL
+    pfsvmcil = ProbFuzzySVM(beta=beta, magic=magic, boost=True)
+    pfsvmcil.fit(X[label[:]==1,:], X[label[:]==-1,:])
+    predict = pfsvmcil.predict(Y)
+    acc,accPos,accNeg,g = evaluation(predict, answer)
+    print "[pfsvm-cil] ", "acc: ", acc
+    print "[pfsvm-cil] ", "acc on pos: ", accPos
+    print "[pfsvm-cil] ", "acc on neg: ", accNeg
+    print "[pfsvm-cil] ", "g-mean: ", g
 
 if __name__ == '__main__':
     for cr in [1., 2., 5., 10., 20., 50., 100.]:
