@@ -9,6 +9,78 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
+cdef class KernelDensityEstimater:
+    cdef np.ndarray sample
+    cdef double variance, nConst
+    cdef object kernel
+
+    def __init__(self, beta):
+        self.variance = 1. / (2 * beta)
+        self.kernel = GaussKernel(beta)
+
+    def fit(self, X):
+        self.sample = X
+        h, dim = X.shape
+        n = np.sqrt( 2. * np.pi * self.variance )**dim
+        self.nConst = n * h
+
+    cdef double superposition(self, np.ndarray[DTYPE_float_t, ndim=1] x):
+        cdef np.ndarray[DTYPE_float_t, ndim=2] sample = self.sample
+        cdef np.ndarray[DTYPE_float_t, ndim=1] xi
+        return sum([ self.kernel.val(x, xi) for xi in sample ])
+
+    def prob(self, np.ndarray[DTYPE_float_t, ndim=1] x):
+        cdef np.ndarray[DTYPE_float_t, ndim=2] sample = self.sample
+        cdef np.ndarray[DTYPE_float_t, ndim=1] xi
+        return sum([ self.kernel.val(x, xi) for xi in sample ]) / self.nConst
+
+    def estimate(self, np.ndarray[DTYPE_float_t, ndim=2] X):
+        cdef np.ndarray[DTYPE_float_t, ndim=1] superposition, xi
+        superposition = np.array([ self.superposition(xi) for xi in X ])
+        return superposition / self.nConst
+
+def evaluation(predict, answer, posLabel=1, negLabel=-1):
+    idxPos = answer[:]==posLabel
+    idxNeg = answer[:]==negLabel
+    numPos = len(answer[idxPos])
+    numNeg = len(answer[idxNeg])
+
+    acc = sum(predict == answer) / float(len(answer))
+    accPos = sum(predict[idxPos] == answer[idxPos]) / float(numPos)
+    accNeg = sum(predict[idxNeg] == answer[idxNeg]) / float(numNeg)
+    g = np.sqrt(accPos * accNeg)
+
+    return (acc,accPos,accNeg,g)
+
+class NormalDistribution():
+    def __init__(self, mean, cov):
+        self.mean = mean
+        self.cov = cov
+
+    def create(self, num):
+        return np.random.multivariate_normal(self.mean, self.cov, num)
+
+class ImbalancedData():
+    def __init__(self, distPos, distNeg, ratio):
+        self.distPos = distPos
+        self.distNeg = distNeg
+        self.ratio = ratio
+
+    def getSample(self, num, labels=[1,-1], shuffle=False):
+        numPos = int( num * ( 1. / (self.ratio + 1.) ) )
+        numNeg = num - numPos
+
+        posSample = self.distPos.create(numPos)
+        posDataset = np.c_[ [labels[0]]*posSample.shape[0], posSample ]
+        negSample = self.distNeg.create(numNeg)
+        negDataset = np.c_[ [labels[1]]*negSample.shape[0], negSample ]
+
+        returned = np.r_[posDataset, negDataset]
+        if shuffle is True:
+            np.random.shuffle(returned)
+
+        return returned
+
 def draw_contour(f, coodinates, *args, plot=None, density=1., **kwargs):
     cdef int p, q
     cdef int x0 = coodinates[0], y0 = coodinates[1]
