@@ -11,41 +11,41 @@ pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
 from kernel import *
 from mlutil import *
 
-class KernelDensityEstimater():
-    def __init__(self, beta):
-        self.variance = 1. / (2 * beta)
-        self.kernel = GaussKernel(beta)
+class ProbFuzzySVM():
+    def __init__(self, beta, magic):
+        self.beta = beta
+        self.magic = magic
 
-    def fit(self, sample):
-        self.sample = sample
-        h, dim = sample.shape
-        n = np.sqrt( 2. * np.pi * self.variance )**dim
-        self.nConst = n * h
-        print "normalize constant: ", self.nConst
+    def fit(self, posData, negData, label=[1,-1]):
+        # equip weights based on KDE
+        kde = KernelDensityEstimater(self.beta)
 
-    def prob(self, x):
-        buf = [ self.kernel.val(x, xi) for xi in self.sample ]
-        return sum(buf) / self.nConst
+        kde.fit(posData)
+        posProb = kde.estimate(posData)
+        kde.fit(negData)
+        negProb = kde.estimate(negData)
 
-    def estimate(self, sample):
-        return np.array([ self.prob(xi) for xi in sample ])
+        # create weights array, putting positive's one before negative' one
+        self.weights = self.magic * np.r_[posProb, negProb]
 
-def evaluation(predict, answer, posLabel=1, negLabel=-1):
-    idxPos = answer[:]==posLabel
-    idxNeg = answer[:]==negLabel
-    numPos = len(answer[idxPos])
-    numNeg = len(answer[idxNeg])
+        # equip sample with these label
+        posData = np.c_[ [label[0]]*posData.shape[0], posData]
+        negData = np.c_[ [label[1]]*negData.shape[0], negData]
 
-    acc = sum(predict == answer) / float(len(answer))
-    accPos = sum(predict[idxPos] == answer[idxPos]) / float(numPos)
-    accNeg = sum(predict[idxNeg] == answer[idxNeg]) / float(numNeg)
-    g = np.sqrt(accPos * accNeg)
+        # concatenate sample matrices, putting positive's one before negative' one
+        self.sample = np.r_[posData, negData]
 
-    return (acc,accPos,accNeg,g)
+        # ready and fit SVM to given sample
+        self.clf = svm.SVC(kernel='precomputed')
+        self.kernel = GaussKernel(self.beta)
+        gram = self.kernel.gram(self.sample[:,1:])
+        self.clf.fit(gram, self.sample[:,0], sample_weight=self.weights)
+
+    def predict(self, target):
+        mat = self.kernel.matrix(target, self.sample[:,1:])
+        return self.clf.predict(mat)
 
 def procedure(numTest, numTrain, classRatio):
-    #[ToDo] in this case, X is supposed to sorted. this assumption should be removed.
-
     mean, cov = [-10, -10], [[50,0],[0,100]]
     posDist = NormalDistribution(mean, cov)
 
@@ -63,35 +63,24 @@ def procedure(numTest, numTrain, classRatio):
     print "given positive samples (test): ", len(answer[answer[:]==1])
     print "given negative samples (test): ", len(answer[answer[:]==-1])
 
+    # params definition
     magic = 20000
     beta = 0.005
 
-    kde = KernelDensityEstimater(beta)
-    kde.fit(trainset[label[:]==1,1:])
-    posWeight = magic * kde.estimate(trainset[label[:]==1,1:])
-    print posWeight
-
-    kde.fit(trainset[label[:]==-1,1:])
-    negWeight = magic * kde.estimate(trainset[label[:]==-1,1:])
-    print negWeight
-    weights = np.r_[posWeight, negWeight]
-
-    kernel = GaussKernel(beta)
-    gram = kernel.gram(X)
-    mat = kernel.matrix(Y, X)
-
-    clf = svm.SVC(kernel='precomputed')
-    clf.fit(gram, label)
-    predict = clf.predict(mat)
+    # default SVM
+    clf = svm.SVC(kernel='rbf', gamma=beta)
+    clf.fit(X, label)
+    predict = clf.predict(Y)
     acc,accPos,accNeg,g = evaluation(predict, answer)
     print "[svm] ", "acc: ", acc
     print "[svm] ", "acc on pos: ", accPos
     print "[svm] ", "acc on neg: ", accNeg
     print "[svm] ", "g-mean: ", g
 
-    clf = svm.SVC(kernel='precomputed')
-    clf.fit(gram, label, sample_weight=weights)
-    predict = clf.predict(mat)
+    # ProvFuzzySVM
+    pfsvm = ProbFuzzySVM(beta, magic)
+    pfsvm.fit(X[label[:]==1,:], X[label[:]==-1,:])
+    predict = pfsvm.predict(Y)
     acc,accPos,accNeg,g = evaluation(predict, answer)
     print "[prob_fsvm] ", "acc: ", acc
     print "[prob_fsvm] ", "acc on pos: ", accPos

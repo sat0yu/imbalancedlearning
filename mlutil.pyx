@@ -9,6 +9,49 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
+cdef class KernelDensityEstimater:
+    cdef np.ndarray sample
+    cdef double variance, nConst
+    cdef object kernel
+
+    def __init__(self, beta):
+        self.variance = 1. / (2 * beta)
+        self.kernel = GaussKernel(beta)
+
+    def fit(self, X):
+        self.sample = X
+        h, dim = X.shape
+        n = np.sqrt( 2. * np.pi * self.variance )**dim
+        self.nConst = n * h
+
+    cdef double superposition(self, np.ndarray[DTYPE_float_t, ndim=1] x):
+        cdef np.ndarray[DTYPE_float_t, ndim=2] sample = self.sample
+        cdef np.ndarray[DTYPE_float_t, ndim=1] xi
+        return sum([ self.kernel.val(x, xi) for xi in sample ])
+
+    def prob(self, np.ndarray[DTYPE_float_t, ndim=1] x):
+        cdef np.ndarray[DTYPE_float_t, ndim=2] sample = self.sample
+        cdef np.ndarray[DTYPE_float_t, ndim=1] xi
+        return sum([ self.kernel.val(x, xi) for xi in sample ]) / self.nConst
+
+    def estimate(self, np.ndarray[DTYPE_float_t, ndim=2] X):
+        cdef np.ndarray[DTYPE_float_t, ndim=1] superposition, xi
+        superposition = np.array([ self.superposition(xi) for xi in X ])
+        return superposition / self.nConst
+
+def evaluation(predict, answer, posLabel=1, negLabel=-1):
+    idxPos = answer[:]==posLabel
+    idxNeg = answer[:]==negLabel
+    numPos = len(answer[idxPos])
+    numNeg = len(answer[idxNeg])
+
+    acc = sum(predict == answer) / float(len(answer))
+    accPos = sum(predict[idxPos] == answer[idxPos]) / float(numPos)
+    accNeg = sum(predict[idxNeg] == answer[idxNeg]) / float(numNeg)
+    g = np.sqrt(accPos * accNeg)
+
+    return (acc,accPos,accNeg,g)
+
 class NormalDistribution():
     def __init__(self, mean, cov):
         self.mean = mean
