@@ -82,38 +82,45 @@ class ProbFuzzySVM():
         mat = self.kernel.matrix(target, self.sample[:,1:])
         return self.clf.predict(mat)
 
-def dataset_iterator(dataset, nCV, label_index=0, shuffle=True):
-    w = len(dataset) / nCV
-
-    if shuffle is True:
-        np.random.shuffle(dataset)
-
-    if label_index >= 0:
-        label = dataset[:,label_index]
-        left = dataset[:,:label_index:]
-        right = dataset[:,label_index+1:]
-        data = np.c_[left, right]
-    else:
-        # if given label index is negative,
-        # forcibly use -1 as index number
-        label = dataset[:,-1]
-        data = dataset[:,:-1]
+def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
+    pDataset = dataset[dataset[:,label_index]==label[0]]
+    pw = len(pDataset) / nCV
+    nDataset = dataset[dataset[:,label_index]==label[1]]
+    nw = len(nDataset) / nCV
 
     for i in range(nCV):
-        piv = i*w
+        pPiv, nPiv = i*pw, i*nw
 
+        # slice out X(Y) from pos/neg dataset
         if i < nCV -1:
-            X = dataset[piv:piv+w]
-            l = label[piv:piv+w]
-            Y = np.r_[dataset[:piv],dataset[piv+w:]]
-            a = np.r_[label[:piv],label[piv+w:]]
+            pX = pDataset[pPiv:pPiv+pw]
+            nX = nDataset[nPiv:nPiv+nw]
+            pY = np.r_[pDataset[:pPiv],pDataset[pPiv+pw:]]
+            nY = np.r_[nDataset[:nPiv],nDataset[nPiv+nw:]]
+            X, Y = np.r_[pX,nX], np.r_[pY, nY]
         else:
-            X = dataset[piv:]
-            l = label[piv:]
-            Y = dataset[:piv]
-            a = label[:piv]
+            X = np.r_[pDataset[pPiv:], nDataset[nPiv:]]
+            Y = np.r_[pDataset[:pPiv], nDataset[:nPiv]]
 
-        yield (X,l,Y,a)
+        # if given shuffle flag
+        if shuffle is True:
+            np.random.shuffle(X)
+            np.random.shuffle(Y)
+
+        # slice out label(answer) from X(Y)
+        lbl, ans = X[:,label_index], Y[:,label_index]
+
+        # slice out train(test)data from X(Y)
+        if label_index >= 0:
+            traindata = np.c_[X[:,:label_index:], X[:,label_index+1:]]
+            testdata = np.c_[Y[:,:label_index:], Y[:,label_index+1:]]
+        else:
+            # if given label index is negative,
+            # forcibly use -1 as index number
+            traindata = X[:,:-1]
+            testdata = Y[:,:-1]
+
+        yield (traindata,lbl,testdata,ans)
 
 def procedure(N, classRatio, nCV):
     mean, cov = [-10, -10], [[50,0],[0,100]]
