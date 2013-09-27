@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 from sklearn import svm
+from dataset import *
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
@@ -122,18 +123,9 @@ def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
 
         yield (traindata,lbl,testdata,ans)
 
-def procedure(N, classRatio, nCV):
-    mean, cov = [-10, -10], [[50,0],[0,100]]
-    posDist = NormalDistribution(mean, cov)
-
-    mean, cov = [10, 10], [[100,0],[0,50]]
-    negDist = NormalDistribution(mean, cov)
-
-    id = ImbalancedData(posDist, negDist, classRatio)
-    dataset = id.getSample(N)
-
+def procedure(dataset, nCV, **kwargs):
     scores = { "SVM":[], "DEC":[], "PFSVM":[], "PFSVMCIL":[] }
-    for X,label,Y,answer in dataset_iterator(dataset, nCV):
+    for X,label,Y,answer in dataset_iterator(dataset, nCV, **kwargs):
         print "given positive samples (train): ", len(label[label[:]==1])
         print "given negative samples (train): ", len(label[label[:]==-1])
         print "given positive samples (test): ", len(answer[answer[:]==1])
@@ -175,6 +167,8 @@ def procedure(N, classRatio, nCV):
         print "%s:\t g:\t %s" % (k, sum(tmp[:,3]) / nCV)
 
 if __name__ == '__main__':
-    for cr in [1., 2., 5., 10., 20., 50., 100.]:
-        #procedure(5000, cr, 5)
-        procedure(1234, cr, 3)
+    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+    procedure(page.raw, 5, label_index=-1)
+
+    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+    procedure(yeast.raw, 5, label_index=-1)
