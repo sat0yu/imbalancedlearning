@@ -82,7 +82,47 @@ class ProbFuzzySVM():
         mat = self.kernel.matrix(target, self.sample[:,1:])
         return self.clf.predict(mat)
 
-def procedure(numTest, numTrain, classRatio):
+def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
+    pDataset = dataset[dataset[:,label_index]==label[0]]
+    pw = len(pDataset) / nCV
+    nDataset = dataset[dataset[:,label_index]==label[1]]
+    nw = len(nDataset) / nCV
+
+    for i in range(nCV):
+        pPiv, nPiv = i*pw, i*nw
+
+        # slice out X(Y) from pos/neg dataset
+        if i < nCV -1:
+            pX = pDataset[pPiv:pPiv+pw]
+            nX = nDataset[nPiv:nPiv+nw]
+            pY = np.r_[pDataset[:pPiv],pDataset[pPiv+pw:]]
+            nY = np.r_[nDataset[:nPiv],nDataset[nPiv+nw:]]
+            X, Y = np.r_[pX,nX], np.r_[pY, nY]
+        else:
+            X = np.r_[pDataset[pPiv:], nDataset[nPiv:]]
+            Y = np.r_[pDataset[:pPiv], nDataset[:nPiv]]
+
+        # if given shuffle flag
+        if shuffle is True:
+            np.random.shuffle(X)
+            np.random.shuffle(Y)
+
+        # slice out label(answer) from X(Y)
+        lbl, ans = X[:,label_index], Y[:,label_index]
+
+        # slice out train(test)data from X(Y)
+        if label_index >= 0:
+            traindata = np.c_[X[:,:label_index:], X[:,label_index+1:]]
+            testdata = np.c_[Y[:,:label_index:], Y[:,label_index+1:]]
+        else:
+            # if given label index is negative,
+            # forcibly use -1 as index number
+            traindata = X[:,:-1]
+            testdata = Y[:,:-1]
+
+        yield (traindata,lbl,testdata,ans)
+
+def procedure(N, classRatio, nCV):
     mean, cov = [-10, -10], [[50,0],[0,100]]
     posDist = NormalDistribution(mean, cov)
 
@@ -90,61 +130,51 @@ def procedure(numTest, numTrain, classRatio):
     negDist = NormalDistribution(mean, cov)
 
     id = ImbalancedData(posDist, negDist, classRatio)
-    trainset = id.getSample(numTrain)
-    testset = id.getSample(numTest)
-    label, X = trainset[:,0], trainset[:,1:]
-    answer, Y = testset[:,0], testset[:,1:]
+    dataset = id.getSample(N)
 
-    print "given positive samples (train): ", len(label[label[:]==1])
-    print "given negative samples (train): ", len(label[label[:]==-1])
-    print "given positive samples (test): ", len(answer[answer[:]==1])
-    print "given negative samples (test): ", len(answer[answer[:]==-1])
+    scores = { "SVM":[], "DEC":[], "PFSVM":[], "PFSVMCIL":[] }
+    for X,label,Y,answer in dataset_iterator(dataset, nCV):
+        print "given positive samples (train): ", len(label[label[:]==1])
+        print "given negative samples (train): ", len(label[label[:]==-1])
+        print "given positive samples (test): ", len(answer[answer[:]==1])
+        print "given negative samples (test): ", len(answer[answer[:]==-1])
 
-    # params definition
-    magic = 20000
-    beta = 0.005
+        # params definition
+        magic = 20000
+        beta = 0.005
 
-    # default SVM
-    clf = svm.SVC(kernel='rbf', gamma=beta)
-    clf.fit(X, label)
-    predict = clf.predict(Y)
-    acc,accPos,accNeg,g = evaluation(predict, answer)
-    print "[svm] ", "acc: ", acc
-    print "[svm] ", "acc on pos: ", accPos
-    print "[svm] ", "acc on neg: ", accNeg
-    print "[svm] ", "g-mean: ", g
+        # default SVM
+        clf = svm.SVC(kernel='rbf', gamma=beta)
+        clf.fit(X, label)
+        predict = clf.predict(Y)
+        scores['SVM'].append( evaluation(predict, answer) )
 
-    # DEC
-    dec = DifferentErrorCost(beta=beta, magic=magic)
-    dec.fit(X[label[:]==1,:], X[label[:]==-1,:])
-    predict = dec.predict(Y)
-    acc,accPos,accNeg,g = evaluation(predict, answer)
-    print "[DEC] ", "acc: ", acc
-    print "[DEC] ", "acc on pos: ", accPos
-    print "[DEC] ", "acc on neg: ", accNeg
-    print "[DEC] ", "g-mean: ", g
+        # DEC
+        dec = DifferentErrorCost(beta=beta, magic=magic)
+        dec.fit(X[label[:]==1,:], X[label[:]==-1,:])
+        predict = dec.predict(Y)
+        scores['DEC'].append( evaluation(predict, answer) )
 
-    # ProvFuzzySVM
-    pfsvm = ProbFuzzySVM(beta=beta, magic=magic)
-    pfsvm.fit(X[label[:]==1,:], X[label[:]==-1,:])
-    predict = pfsvm.predict(Y)
-    acc,accPos,accNeg,g = evaluation(predict, answer)
-    print "[pfsvm] ", "acc: ", acc
-    print "[pfsvm] ", "acc on pos: ", accPos
-    print "[pfsvm] ", "acc on neg: ", accNeg
-    print "[pfsvm] ", "g-mean: ", g
+        # ProvFuzzySVM
+        pfsvm = ProbFuzzySVM(beta=beta, magic=magic)
+        pfsvm.fit(X[label[:]==1,:], X[label[:]==-1,:])
+        predict = pfsvm.predict(Y)
+        scores['PFSVM'].append( evaluation(predict, answer) )
 
-    # ProvFuzzySVM-CIL
-    pfsvmcil = ProbFuzzySVM(beta=beta, magic=magic, boost=True)
-    pfsvmcil.fit(X[label[:]==1,:], X[label[:]==-1,:])
-    predict = pfsvmcil.predict(Y)
-    acc,accPos,accNeg,g = evaluation(predict, answer)
-    print "[pfsvm-cil] ", "acc: ", acc
-    print "[pfsvm-cil] ", "acc on pos: ", accPos
-    print "[pfsvm-cil] ", "acc on neg: ", accNeg
-    print "[pfsvm-cil] ", "g-mean: ", g
+        # ProvFuzzySVM-CIL
+        pfsvmcil = ProbFuzzySVM(beta=beta, magic=magic, boost=True)
+        pfsvmcil.fit(X[label[:]==1,:], X[label[:]==-1,:])
+        predict = pfsvmcil.predict(Y)
+        scores['PFSVMCIL'].append( evaluation(predict, answer) )
+
+    for k, v in scores.items():
+        tmp = np.array(v)
+        print "%s:\t acc:\t %s" % (k, sum(tmp[:,0]) / nCV)
+        print "%s:\t accP:\t %s" % (k, sum(tmp[:,1]) / nCV)
+        print "%s:\t accN:\t %s" % (k, sum(tmp[:,2]) / nCV)
+        print "%s:\t g:\t %s" % (k, sum(tmp[:,3]) / nCV)
 
 if __name__ == '__main__':
     for cr in [1., 2., 5., 10., 20., 50., 100.]:
-        #procedure(5000, 1000, cr)
-        procedure(1250, 250, cr)
+        #procedure(5000, cr, 5)
+        procedure(1234, cr, 3)
