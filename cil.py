@@ -11,76 +11,62 @@ from kernel import *
 from mlutil import *
 
 class DifferentErrorCost():
-    def __init__(self, kernel=None, beta=1., magic=1.):
-        self.kernel = kernel if kernel is not None else GaussKernel(beta)
-        self.magic = magic
+    def __init__(self, kernel):
+        self.kernel = kernel
 
-    def fit(self, posData, negData, label=[1,-1]):
+    def fit(self, sample, label, class_label=[1,-1]):
+        # store given sample
+        self.sample = sample
+
         # equip weight of each class
-        numPos, numNeg = float(len(posData)), float(len(negData))
+        numPos = float(len(label[label[:]==class_label[0]]))
+        numNeg = float(len(label[label[:]==class_label[1]]))
         if numPos < numNeg:
             cPos, cNeg = 1., numPos / numNeg
         else:
             cPos, cNeg = numNeg / numPos, 1.
 
-        # equip sample with these label
-        posData = np.c_[ [label[0]]*posData.shape[0], posData]
-        negData = np.c_[ [label[1]]*negData.shape[0], negData]
-
-        # concatenate sample matrices
-        self.sample = np.r_[posData, negData]
-
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='precomputed', class_weight={label[0]:cPos, label[1]:cNeg})
-        gram = self.kernel.gram(self.sample[:,1:])
-        self.clf.fit(gram, self.sample[:,0])
+        self.clf = svm.SVC(kernel='precomputed', class_weight={class_label[0]:cPos, class_label[1]:cNeg})
+        gram = self.kernel.gram(self.sample)
+        self.clf.fit(gram, label)
 
     def predict(self, target):
-        mat = self.kernel.matrix(target, self.sample[:,1:])
+        mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
-class ProbFuzzySVM():
-    def __init__(self, beta=1., magic=1., boost=False):
-        self.beta = beta
-        self.magic = magic
-        self.boost = boost
+class KernelProbabilityFuzzySVM():
+    def __init__(self, kernel):
+        self.kernel = kernel
 
-    def fit(self, posData, negData, label=[1,-1]):
-        # equip weights based on KDE
-        kde = KernelDensityEstimater(self.beta)
+    def fit(self, sample, label, class_label=[1,-1]):
+        # equip weight of each class
+        numPos = float(len(label[label[:]==class_label[0]]))
+        numNeg = float(len(label[label[:]==class_label[1]]))
+        if numPos < numNeg:
+            cPos, cNeg = 1., numPos / numNeg
+        else:
+            cPos, cNeg = numNeg / numPos, 1.
 
-        kde.fit(posData)
-        posProb = kde.estimate(posData)
-        kde.fit(negData)
-        negProb = kde.estimate(negData)
+        # sort given sample with their label
+        dataset = np.c_[label, sample]
+        dataset = dataset[dataset[:,0].argsort()]
+        label, self.sample = dataset[:,0], dataset[:,1:]
 
-        # equip weight og each class
-        cPos, cNeg = 1., 1.
-        if self.boost is True:
-            numPos, numNeg = float(len(posData)), float(len(negData))
-            if numPos < numNeg:
-                cPos, cNeg = 1., numPos / numNeg
-            else:
-                cPos, cNeg = numNeg / numPos, 1.
-
-        # create weights array, putting positive's one before negative' one
-        self.weights = self.magic * np.r_[posProb, negProb]
-
-        # equip sample with these label
-        posData = np.c_[ [label[0]]*posData.shape[0], posData]
-        negData = np.c_[ [label[1]]*negData.shape[0], negData]
-
-        # concatenate sample matrices, putting positive's one before negative' one
-        self.sample = np.r_[posData, negData]
+        # calc. gram matrix and then sample_weight
+        gram = self.kernel.gram(self.sample)
+        nFront, nBack = (numNeg, numPos) if class_label[0] > class_label[1] else (numPos, numNeg)
+        boundary = int(nFront)
+        wFront = np.sum(gram[:boundary,:boundary], axis=0)
+        wBack = np.sum(gram[boundary:,boundary:], axis=0)
+        weight = np.r_[wFront / nFront, wBack / nBack]
 
         # ready and fit SVM to given sample
         self.clf = svm.SVC(kernel='precomputed', class_weight={label[0]:cPos, label[1]:cNeg})
-        self.kernel = GaussKernel(self.beta)
-        gram = self.kernel.gram(self.sample[:,1:])
-        self.clf.fit(gram, self.sample[:,0], sample_weight=self.weights)
+        self.clf.fit(gram, label, sample_weight=weight)
 
     def predict(self, target):
-        mat = self.kernel.matrix(target, self.sample[:,1:])
+        mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
 def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
@@ -124,7 +110,7 @@ def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
         yield (traindata,lbl,testdata,ans)
 
 def procedure(dataset, nCV, **kwargs):
-    scores = { "SVM":[], "DEC":[], "PFSVM":[], "PFSVMCIL":[] }
+    scores = { "SVM":[], "DEC":[], "KPFSVM":[] }
     for X,label,Y,answer in dataset_iterator(dataset, nCV, **kwargs):
         print "given positive samples (train): ", len(label[label[:]==1])
         print "given negative samples (train): ", len(label[label[:]==-1])
@@ -132,8 +118,10 @@ def procedure(dataset, nCV, **kwargs):
         print "given negative samples (test): ", len(answer[answer[:]==-1])
 
         # params definition
-        magic = 20000
         beta = 0.005
+
+        # create Kernel Instance(s)
+        gk = GaussKernel(beta)
 
         # default SVM
         clf = svm.SVC(kernel='rbf', gamma=beta)
@@ -142,31 +130,33 @@ def procedure(dataset, nCV, **kwargs):
         scores['SVM'].append( evaluation(predict, answer) )
 
         # DEC
-        dec = DifferentErrorCost(beta=beta, magic=magic)
-        dec.fit(X[label[:]==1,:], X[label[:]==-1,:])
+        dec = DifferentErrorCost(gk)
+        dec.fit(X, label)
         predict = dec.predict(Y)
         scores['DEC'].append( evaluation(predict, answer) )
 
-        # ProvFuzzySVM
-        pfsvm = ProbFuzzySVM(beta=beta, magic=magic)
-        pfsvm.fit(X[label[:]==1,:], X[label[:]==-1,:])
-        predict = pfsvm.predict(Y)
-        scores['PFSVM'].append( evaluation(predict, answer) )
-
-        # ProvFuzzySVM-CIL
-        pfsvmcil = ProbFuzzySVM(beta=beta, magic=magic, boost=True)
-        pfsvmcil.fit(X[label[:]==1,:], X[label[:]==-1,:])
-        predict = pfsvmcil.predict(Y)
-        scores['PFSVMCIL'].append( evaluation(predict, answer) )
+        # KernelProbabilityFuzzySVM
+        kpfsvm = KernelProbabilityFuzzySVM(gk)
+        kpfsvm.fit(X, label)
+        predict = kpfsvm.predict(Y)
+        scores['KPFSVM'].append( evaluation(predict, answer) )
 
     for k, v in scores.items():
         tmp = np.array(v)
         print "%s:\t acc:\t %s" % (k, sum(tmp[:,0]) / nCV)
-        print "%s:\t accP:\t %s" % (k, sum(tmp[:,1]) / nCV)
-        print "%s:\t accN:\t %s" % (k, sum(tmp[:,2]) / nCV)
-        print "%s:\t g:\t %s" % (k, sum(tmp[:,3]) / nCV)
+        accP, accN = sum(tmp[:,1])/nCV, sum(tmp[:,2])/nCV
+        g = np.sqrt(accP * accN)
+        print "%s:\t accP:\t %s" % (k, accP)
+        print "%s:\t accN:\t %s" % (k, accN)
+        print "%s:\t g:\t %s" % (k, g)
 
 if __name__ == '__main__':
+    posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
+    negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
+    id = ImbalancedData(posDist, negDist, 50.)
+    dataset = id.getSample(5000)
+    procedure(dataset, 5, label_index=0)
+
     page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
     procedure(page.raw, 5, label_index=-1)
 
