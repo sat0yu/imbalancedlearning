@@ -30,3 +30,8 @@ if __name__ == '__main__':
     # sed "s/CYT$/-1/g" yeast.data | sed "s/NUC$/-1/g" | sed "s/MIT$/-1/g" | sed "s/ME3$/-1/g" | sed "s/ME2$/1/g" | sed "s/ME1$/-1/g" | sed "s/EXC$/-1/g" | sed "s/VAC$/-1/g" | sed "s/POX$/-1/g" | sed "s/ERL$/-1/g" > yeast.rplcd
     Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
 
+    # in case using FreeBSD sed
+    # sed 's/,15$/,p/g' abalone.data | sed 's/,[0-9]$/,-1/g' | sed 's/,[12][0-9]$/,-1/g' | sed 's/,p$/,1/g' > abalone.rplcd
+    # in case using GNU-sed
+    # sed 's/,15$/,p/g' abalone.data | sed 's/,[12]\?[0-9]/,-1/g' | sed 's/,p$/,1/g' > abalone.rplcd
+    Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
