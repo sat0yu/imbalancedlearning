@@ -111,7 +111,7 @@ def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
 
 def procedure(dataset, nCV, **kwargs):
     scores = { "SVM":[], "DEC":[], "KPFSVM":[] }
-    for X,label,Y,answer in dataset_iterator(dataset, nCV, **kwargs):
+    for Y,answer,X,label in dataset_iterator(dataset, nCV, **kwargs):
         print "given positive samples (train): ", len(label[label[:]==1])
         print "given negative samples (train): ", len(label[label[:]==-1])
         print "given positive samples (test): ", len(answer[answer[:]==1])
