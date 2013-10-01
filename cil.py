@@ -69,46 +69,6 @@ class KernelProbabilityFuzzySVM():
         mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
-def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
-    pDataset = dataset[dataset[:,label_index]==label[0]]
-    pw = len(pDataset) / nCV
-    nDataset = dataset[dataset[:,label_index]==label[1]]
-    nw = len(nDataset) / nCV
-
-    for i in range(nCV):
-        pPiv, nPiv = i*pw, i*nw
-
-        # slice out X(Y) from pos/neg dataset
-        if i < nCV -1:
-            pX = pDataset[pPiv:pPiv+pw]
-            nX = nDataset[nPiv:nPiv+nw]
-            pY = np.r_[pDataset[:pPiv],pDataset[pPiv+pw:]]
-            nY = np.r_[nDataset[:nPiv],nDataset[nPiv+nw:]]
-            X, Y = np.r_[pX,nX], np.r_[pY, nY]
-        else:
-            X = np.r_[pDataset[pPiv:], nDataset[nPiv:]]
-            Y = np.r_[pDataset[:pPiv], nDataset[:nPiv]]
-
-        # if given shuffle flag
-        if shuffle is True:
-            np.random.shuffle(X)
-            np.random.shuffle(Y)
-
-        # slice out label(answer) from X(Y)
-        lbl, ans = X[:,label_index], Y[:,label_index]
-
-        # slice out train(test)data from X(Y)
-        if label_index >= 0:
-            traindata = np.c_[X[:,:label_index:], X[:,label_index+1:]]
-            testdata = np.c_[Y[:,:label_index:], Y[:,label_index+1:]]
-        else:
-            # if given label index is negative,
-            # forcibly use -1 as index number
-            traindata = X[:,:-1]
-            testdata = Y[:,:-1]
-
-        yield (traindata,lbl,testdata,ans)
-
 def procedure(dataset, nCV, **kwargs):
     scores = { "SVM":[], "DEC":[], "KPFSVM":[] }
     for Y,answer,X,label in dataset_iterator(dataset, nCV, **kwargs):
