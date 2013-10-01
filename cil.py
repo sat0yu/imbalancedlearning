@@ -71,7 +71,61 @@ class KernelProbabilityFuzzySVM():
         mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
-def procedure(dataset, nCV, **kwargs):
+def parameter_search(X, label, classifer_generator, C=[], beta=[], nCV=5):
+    dataset = np.c_[label, X]
+    opt_C, opt_beta, maxScore = 0., 0., 0.
+
+    for _C in C:
+        for _beta in beta:
+            scores = []
+            for _Y,_answer,_X,_label in dataset_iterator(dataset, nCV):
+                clf = classifer_generator(C=_C, beta=_beta)
+                clf.fit(_X, _label)
+                predict = clf.predict(_Y)
+                scores.append( evaluation(predict, _answer) )
+
+            tmp = np.array(scores)
+            accP, accN = sum(tmp[:,1])/nCV, sum(tmp[:,2])/nCV
+            g = np.sqrt(accP * accN)
+            print "C:%f, beta:%f, g:%f" % (_C, _beta, g)
+
+            if g > maxScore:
+                maxScore, opt_C, opt_beta = g, _C, _beta
+
+    return (opt_C, opt_beta, maxScore)
+
+def gauss_svm(C, beta):
+    return svm.SVC(kernel="rbf", gamma=beta, C=C)
+
+def gauss_svm_dec(C, beta):
+    return DifferentErrorCost(GaussKernel(beta), C=C)
+
+def gauss_svm_kpfsvm(C, beta):
+    return KernelProbabilityFuzzySVM(GaussKernel(beta), C=C)
+
+def routine(name, classifer_generator, X, label, Y, answer, nCV=5):
+    # ready parameter search space
+    rough_C, rough_beta = [10**i for i in range(10)], [10**i for i in range(-9,1)]
+    narrow_space = np.linspace(-0.75, 0.75, num=7)
+
+    # rough search
+    opt_C, opt_beta, g = parameter_search(X, label, classifer_generator, C=rough_C, beta=rough_beta, nCV=nCV)
+    print "%s: C=%f, beta=%f, g=%f" % (name, opt_C, opt_beta, g)
+
+    # narrow search
+    _C = [opt_C*(10**i) for i in narrow_space]
+    _beta = [opt_beta*(10**i) for i in narrow_space]
+    opt_C, opt_beta, g = parameter_search(X, label, classifer_generator, C=_C, beta=_beta, nCV=nCV)
+    print "%s: C=%f, beta=%f, g=%f" % (name, opt_C, opt_beta, g)
+
+    # evaluation
+    clf = classifer_generator(opt_C, opt_beta)
+    clf.fit(X, label)
+    predict = clf.predict(Y)
+
+    return evaluation(predict, answer)
+
+def procedure(dataset, nCV=5, **kwargs):
     scores = { "SVM":[], "DEC":[], "KPFSVM":[] }
     for Y,answer,X,label in dataset_iterator(dataset, nCV, **kwargs):
         print "given positive samples (train): ", len(label[label[:]==1])
@@ -79,29 +133,14 @@ def procedure(dataset, nCV, **kwargs):
         print "given positive samples (test): ", len(answer[answer[:]==1])
         print "given negative samples (test): ", len(answer[answer[:]==-1])
 
-        # params definition
-        beta = 0.005
-
-        # create Kernel Instance(s)
-        gk = GaussKernel(beta)
-
         # default SVM
-        clf = svm.SVC(kernel='rbf', gamma=beta)
-        clf.fit(X, label)
-        predict = clf.predict(Y)
-        scores['SVM'].append( evaluation(predict, answer) )
+        scores['SVM'].append( routine('SVM', gauss_svm, X, label, Y, answer, nCV=nCV) )
 
         # DEC
-        dec = DifferentErrorCost(gk)
-        dec.fit(X, label)
-        predict = dec.predict(Y)
-        scores['DEC'].append( evaluation(predict, answer) )
+        scores['DEC'].append( routine('DEC', gauss_svm_dec, X, label, Y, answer, nCV=nCV) )
 
         # KernelProbabilityFuzzySVM
-        kpfsvm = KernelProbabilityFuzzySVM(gk)
-        kpfsvm.fit(X, label)
-        predict = kpfsvm.predict(Y)
-        scores['KPFSVM'].append( evaluation(predict, answer) )
+        scores['KPFSVM'].append( routine('KPFSVM', gauss_svm_kpfsvm, X, label, Y, answer, nCV=nCV) )
 
     for k, v in scores.items():
         tmp = np.array(v)
@@ -117,7 +156,7 @@ if __name__ == '__main__':
     negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
     id = ImbalancedData(posDist, negDist, 50.)
     dataset = id.getSample(5000)
-    procedure(dataset, 5, label_index=0)
+    procedure(dataset, nCV=5, label_index=0)
 
     page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
     procedure(page.raw, 5, label_index=-1)
