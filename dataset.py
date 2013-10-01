@@ -35,3 +35,6 @@ if __name__ == '__main__':
     # in case using GNU-sed
     # sed 's/,15$/,p/g' abalone.data | sed 's/,[12]\?[0-9]/,-1/g' | sed 's/,p$/,1/g' > abalone.rplcd
     Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+
+    # sed 's/im$/1/g' ecoli.data | sed 's/cp\|pp\|imU\|om\|omL\|imL\|imS$/-1/g' > ecoli.rplcd
+    Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
