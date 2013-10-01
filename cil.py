@@ -4,6 +4,7 @@ import os
 import sys
 from sklearn import svm
 from dataset import *
+import multiprocessing
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
@@ -71,18 +72,26 @@ class KernelProbabilityFuzzySVM():
         mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
+def multiprocess(args):
+    classifer_generator,X,label,Y,answer,C,beta = args
+
+    clf = classifer_generator(C=C, beta=beta)
+    clf.fit(X, label)
+    predict = clf.predict(Y)
+
+    ev = evaluation(predict, answer)
+    #print "C:%f,beta:%f,g:%f" % (C,beta,ev[-1])
+    #sys.stdout.flush()
+    return ev
+
 def parameter_search(X, label, classifer_generator, C=[], beta=[], nCV=5):
     dataset = np.c_[label, X]
     opt_C, opt_beta, maxScore = 0., 0., 0.
-
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
     for _C in C:
         for _beta in beta:
-            scores = []
-            for _Y,_answer,_X,_label in dataset_iterator(dataset, nCV):
-                clf = classifer_generator(C=_C, beta=_beta)
-                clf.fit(_X, _label)
-                predict = clf.predict(_Y)
-                scores.append( evaluation(predict, _answer) )
+            args = [ (classifer_generator,_X,_label,_Y,_answer,_C,_beta) for _Y,_answer,_X,_label in dataset_iterator(dataset, nCV) ]
+            scores = pool.map(multiprocess, args)
 
             tmp = np.array(scores)
             accP, accN = sum(tmp[:,1])/nCV, sum(tmp[:,2])/nCV
