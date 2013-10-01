@@ -11,8 +11,9 @@ from kernel import *
 from mlutil import *
 
 class DifferentErrorCost():
-    def __init__(self, kernel):
+    def __init__(self, kernel, C=1.):
         self.kernel = kernel
+        self.C = C
 
     def fit(self, sample, label, class_label=[1,-1]):
         # store given sample
@@ -27,7 +28,7 @@ class DifferentErrorCost():
             cPos, cNeg = numNeg / numPos, 1.
 
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='precomputed', class_weight={class_label[0]:cPos, class_label[1]:cNeg})
+        self.clf = svm.SVC(kernel='precomputed', C=self.C, class_weight={class_label[0]:cPos, class_label[1]:cNeg})
         gram = self.kernel.gram(self.sample)
         self.clf.fit(gram, label)
 
@@ -36,8 +37,9 @@ class DifferentErrorCost():
         return self.clf.predict(mat)
 
 class KernelProbabilityFuzzySVM():
-    def __init__(self, kernel):
+    def __init__(self, kernel, C=1.):
         self.kernel = kernel
+        self.C = C
 
     def fit(self, sample, label, class_label=[1,-1]):
         # equip weight of each class
@@ -62,7 +64,7 @@ class KernelProbabilityFuzzySVM():
         weight = np.r_[wFront / nFront, wBack / nBack]
 
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='precomputed', class_weight={label[0]:cPos, label[1]:cNeg})
+        self.clf = svm.SVC(kernel='precomputed', C=self.C, class_weight={label[0]:cPos, label[1]:cNeg})
         self.clf.fit(gram, label, sample_weight=weight)
 
     def predict(self, target):
