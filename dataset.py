@@ -41,3 +41,12 @@ if __name__ == '__main__':
 
     # sed 's/,1.$/,p/g' transfusion.data| sed 's/,0.$/,-1/g' | sed 's/,p$/,1/g' | sed 's/ //g' > transfusion.rplcd
     Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+
+    # sed 's/1$/-1/g' haberman.data | sed 's/2$/1/g' > haberman.rplcd
+    Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+
+    # sed 's/,[12]$/,-1/g' waveform.data | sed 's/,0$/,1/g' > waveform.rplcd
+    Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+
+    # sed 's/,0$/,-1/g' pima-indians-diabetes.data > pima-indians-diabetes.rplcd
+    Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
