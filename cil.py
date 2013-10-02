@@ -11,8 +11,9 @@ from kernel import *
 from mlutil import *
 
 class DifferentErrorCost():
-    def __init__(self, kernel):
+    def __init__(self, kernel, C=1.):
         self.kernel = kernel
+        self.C = C
 
     def fit(self, sample, label, class_label=[1,-1]):
         # store given sample
@@ -27,7 +28,7 @@ class DifferentErrorCost():
             cPos, cNeg = numNeg / numPos, 1.
 
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='precomputed', class_weight={class_label[0]:cPos, class_label[1]:cNeg})
+        self.clf = svm.SVC(kernel='precomputed', C=self.C, class_weight={class_label[0]:cPos, class_label[1]:cNeg})
         gram = self.kernel.gram(self.sample)
         self.clf.fit(gram, label)
 
@@ -36,8 +37,9 @@ class DifferentErrorCost():
         return self.clf.predict(mat)
 
 class KernelProbabilityFuzzySVM():
-    def __init__(self, kernel):
+    def __init__(self, kernel, C=1.):
         self.kernel = kernel
+        self.C = C
 
     def fit(self, sample, label, class_label=[1,-1]):
         # equip weight of each class
@@ -62,84 +64,83 @@ class KernelProbabilityFuzzySVM():
         weight = np.r_[wFront / nFront, wBack / nBack]
 
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='precomputed', class_weight={label[0]:cPos, label[1]:cNeg})
+        self.clf = svm.SVC(kernel='precomputed', C=self.C, class_weight={label[0]:cPos, label[1]:cNeg})
         self.clf.fit(gram, label, sample_weight=weight)
 
     def predict(self, target):
         mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
-def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
-    pDataset = dataset[dataset[:,label_index]==label[0]]
-    pw = len(pDataset) / nCV
-    nDataset = dataset[dataset[:,label_index]==label[1]]
-    nw = len(nDataset) / nCV
+def parameter_search(X, label, classifer_generator, C=[], beta=[], nCV=5):
+    dataset = np.c_[label, X]
+    opt_C, opt_beta, maxScore = 0., 0., 0.
 
-    for i in range(nCV):
-        pPiv, nPiv = i*pw, i*nw
+    for _C in C:
+        for _beta in beta:
+            scores = []
+            for _Y,_answer,_X,_label in dataset_iterator(dataset, nCV):
+                clf = classifer_generator(C=_C, beta=_beta)
+                clf.fit(_X, _label)
+                predict = clf.predict(_Y)
+                scores.append( evaluation(predict, _answer) )
 
-        # slice out X(Y) from pos/neg dataset
-        if i < nCV -1:
-            pX = pDataset[pPiv:pPiv+pw]
-            nX = nDataset[nPiv:nPiv+nw]
-            pY = np.r_[pDataset[:pPiv],pDataset[pPiv+pw:]]
-            nY = np.r_[nDataset[:nPiv],nDataset[nPiv+nw:]]
-            X, Y = np.r_[pX,nX], np.r_[pY, nY]
-        else:
-            X = np.r_[pDataset[pPiv:], nDataset[nPiv:]]
-            Y = np.r_[pDataset[:pPiv], nDataset[:nPiv]]
+            tmp = np.array(scores)
+            accP, accN = sum(tmp[:,1])/nCV, sum(tmp[:,2])/nCV
+            g = np.sqrt(accP * accN)
+            print "C:%f, beta:%f, g:%f" % (_C, _beta, g)
 
-        # if given shuffle flag
-        if shuffle is True:
-            np.random.shuffle(X)
-            np.random.shuffle(Y)
+            if g > maxScore:
+                maxScore, opt_C, opt_beta = g, _C, _beta
 
-        # slice out label(answer) from X(Y)
-        lbl, ans = X[:,label_index], Y[:,label_index]
+    return (opt_C, opt_beta, maxScore)
 
-        # slice out train(test)data from X(Y)
-        if label_index >= 0:
-            traindata = np.c_[X[:,:label_index:], X[:,label_index+1:]]
-            testdata = np.c_[Y[:,:label_index:], Y[:,label_index+1:]]
-        else:
-            # if given label index is negative,
-            # forcibly use -1 as index number
-            traindata = X[:,:-1]
-            testdata = Y[:,:-1]
+def gauss_svm(C, beta):
+    return svm.SVC(kernel="rbf", gamma=beta, C=C)
 
-        yield (traindata,lbl,testdata,ans)
+def gauss_svm_dec(C, beta):
+    return DifferentErrorCost(GaussKernel(beta), C=C)
 
-def procedure(dataset, nCV, **kwargs):
+def gauss_svm_kpfsvm(C, beta):
+    return KernelProbabilityFuzzySVM(GaussKernel(beta), C=C)
+
+def routine(name, classifer_generator, X, label, Y, answer, nCV=5):
+    # ready parameter search space
+    rough_C, rough_beta = [10**i for i in range(10)], [10**i for i in range(-9,1)]
+    narrow_space = np.linspace(-0.75, 0.75, num=7)
+
+    # rough search
+    opt_C, opt_beta, g = parameter_search(X, label, classifer_generator, C=rough_C, beta=rough_beta, nCV=nCV)
+    print "%s: C=%f, beta=%f, g=%f" % (name, opt_C, opt_beta, g)
+
+    # narrow search
+    _C = [opt_C*(10**i) for i in narrow_space]
+    _beta = [opt_beta*(10**i) for i in narrow_space]
+    opt_C, opt_beta, g = parameter_search(X, label, classifer_generator, C=_C, beta=_beta, nCV=nCV)
+    print "%s: C=%f, beta=%f, g=%f" % (name, opt_C, opt_beta, g)
+
+    # evaluation
+    clf = classifer_generator(opt_C, opt_beta)
+    clf.fit(X, label)
+    predict = clf.predict(Y)
+
+    return evaluation(predict, answer)
+
+def procedure(dataset, nCV=5, **kwargs):
     scores = { "SVM":[], "DEC":[], "KPFSVM":[] }
-    for X,label,Y,answer in dataset_iterator(dataset, nCV, **kwargs):
+    for Y,answer,X,label in dataset_iterator(dataset, nCV, **kwargs):
         print "given positive samples (train): ", len(label[label[:]==1])
         print "given negative samples (train): ", len(label[label[:]==-1])
         print "given positive samples (test): ", len(answer[answer[:]==1])
         print "given negative samples (test): ", len(answer[answer[:]==-1])
 
-        # params definition
-        beta = 0.005
-
-        # create Kernel Instance(s)
-        gk = GaussKernel(beta)
-
         # default SVM
-        clf = svm.SVC(kernel='rbf', gamma=beta)
-        clf.fit(X, label)
-        predict = clf.predict(Y)
-        scores['SVM'].append( evaluation(predict, answer) )
+        scores['SVM'].append( routine('SVM', gauss_svm, X, label, Y, answer, nCV=nCV) )
 
         # DEC
-        dec = DifferentErrorCost(gk)
-        dec.fit(X, label)
-        predict = dec.predict(Y)
-        scores['DEC'].append( evaluation(predict, answer) )
+        scores['DEC'].append( routine('DEC', gauss_svm_dec, X, label, Y, answer, nCV=nCV) )
 
         # KernelProbabilityFuzzySVM
-        kpfsvm = KernelProbabilityFuzzySVM(gk)
-        kpfsvm.fit(X, label)
-        predict = kpfsvm.predict(Y)
-        scores['KPFSVM'].append( evaluation(predict, answer) )
+        scores['KPFSVM'].append( routine('KPFSVM', gauss_svm_kpfsvm, X, label, Y, answer, nCV=nCV) )
 
     for k, v in scores.items():
         tmp = np.array(v)
@@ -155,7 +156,7 @@ if __name__ == '__main__':
     negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
     id = ImbalancedData(posDist, negDist, 50.)
     dataset = id.getSample(5000)
-    procedure(dataset, 5, label_index=0)
+    procedure(dataset, nCV=5, label_index=0)
 
     page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
     procedure(page.raw, 5, label_index=-1)
