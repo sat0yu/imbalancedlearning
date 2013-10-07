@@ -15,23 +15,51 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # parameter settings
-    mean = [-1., 1.]
-    cov = [[1.,0.],[0., 1.]]
-    rect = [-4,2,-2,4]
-    numData = 200
+    mean1 = [-10., 10.]
+    cov1 = [[1.,0.],[0., 1.]]
+
+    mean2 = [-5., 4.]
+    cov2 = [[0.5,0.],[0., 0.5]]
+
+    mean3 = [-5., 15.]
+    cov3 = [[0.5,0.],[0., 0.5]]
+
+    mean4 = [-15., 15.]
+    cov4 = [[0.5,0.],[0., 0.5]]
+
+    mean5 = [-15., 4.]
+    cov5 = [[0.5,0.],[0., 0.5]]
+
+    rect = [-17,-2,1,18]
+    numData1 = 200
+    numData2 = 50
+    numData3 = 50
+    numData4 = 50
+    numData5 = 50
     beta = 10.
     degree = 3
     coef = 1.
     alpha = 10.
 
-    dist = NormalDistribution(mean, cov)
-    X = dist.create(numData)
+    dist1 = NormalDistribution(mean1, cov1)
+    dist2 = NormalDistribution(mean2, cov2)
+    dist3 = NormalDistribution(mean3, cov3)
+    dist4 = NormalDistribution(mean4, cov4)
+    dist5 = NormalDistribution(mean5, cov5)
+
+    X = np.r_[
+            dist1.create(numData1),
+            dist2.create(numData2),
+            dist3.create(numData3),
+            dist4.create(numData4),
+            dist5.create(numData5),
+            ]
     #print X
 
     plt.subplot(321)
     plt.axis(rect)
     plt.scatter(X[:,0], X[:,1])
-    plt.title("Scatter (mean: %s,\tcov: %s)" % (mean, cov))
+    plt.title("Scatter")
 
     gk = GaussKernel(beta)
     gram = gk.gram(X)
