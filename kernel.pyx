@@ -144,7 +144,7 @@ cdef class LaplaceKernel(FloatKernel):
         self.alpha = alpha
 
     cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
-        return np.exp(-self.alpha * np.abs(vec1-vec2))
+        return np.exp(-self.alpha * np.sum(np.abs(vec1-vec2)))
 
 cdef class NormalizedKernel(FloatKernel):
     cdef object k
