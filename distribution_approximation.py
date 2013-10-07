@@ -15,10 +15,10 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # parameter settings
-    mean = [1.]
-    cov = [[5.]]
-    numData = 50
-    numBins = 25
+    mean = [-1., 1.]
+    cov = [[1.,0.],[0., 1.]]
+    rect = [-4,2,-2,4]
+    numData = 200
     beta = 10.
     degree = 3
     coef = 1.
@@ -29,27 +29,24 @@ if __name__ == '__main__':
     #print X
 
     plt.subplot(321)
-    plt.hist(X, bins=numBins)
-    plt.title("Histgram")
+    plt.axis(rect)
+    plt.scatter(X[:,0], X[:,1])
+    plt.title("Scatter (mean: %s,\tcov: %s)" % (mean, cov))
 
     gk = GaussKernel(beta)
     gram = gk.gram(X)
     membership = np.sum(gram, axis=0)
-    y = np.c_[X, membership]
-    y = y[y[:,0].argsort()]
     plt.subplot(322)
-    plt.stem(y[:,0], y[:,1])
-    plt.plot(X, [0.1]*len(X), 'xr')
+    plt.axis(rect)
+    plt.scatter(X[:,0], X[:,1], c=membership)
     plt.title("Gauss Kernel (beta=%f)" % beta)
 
     lk = LaplaceKernel(alpha)
     gram = lk.gram(X)
     membership = np.sum(gram, axis=0)
-    y = np.c_[X, membership]
-    y = y[y[:,0].argsort()]
     plt.subplot(323)
-    plt.stem(y[:,0], y[:,1])
-    plt.plot(X, [0.1]*len(X), 'xr')
+    plt.axis(rect)
+    plt.scatter(X[:,0], X[:,1], c=membership)
     plt.title("Laplace Kernel (alpha=%f)" % alpha)
 
     flk = FloatLinearKernel()
@@ -59,8 +56,8 @@ if __name__ == '__main__':
     y = np.c_[X, membership]
     y = y[y[:,0].argsort()]
     plt.subplot(324)
-    plt.stem(y[:,0], y[:,1])
-    plt.plot(X, np.zeros(len(X)), 'xr')
+    plt.axis(rect)
+    plt.scatter(X[:,0], X[:,1], c=membership)
     plt.title("Linear Kernel")
 
     pk = PolyKernel(degree)
@@ -70,8 +67,8 @@ if __name__ == '__main__':
     y = np.c_[X, membership]
     y = y[y[:,0].argsort()]
     plt.subplot(325)
-    plt.stem(y[:,0], y[:,1])
-    plt.plot(X, [0.1]*len(X), 'xr')
+    plt.axis(rect)
+    plt.scatter(X[:,0], X[:,1], c=membership)
     plt.title("Normalized %d-Poly Kernel (degree=%d, coef=0.0)" % (degree, degree))
 
     pk = PolyKernel(degree, coef)
@@ -81,8 +78,8 @@ if __name__ == '__main__':
     y = np.c_[X, membership]
     y = y[y[:,0].argsort()]
     plt.subplot(326)
-    plt.stem(y[:,0], y[:,1])
-    plt.plot(X, [0.1]*len(X), 'xr')
+    plt.axis(rect)
+    plt.scatter(X[:,0], X[:,1], c=membership)
     plt.title("Normalized %d-Poly Kernel (degree=%d, coef=%f)" % (degree, degree, coef))
 
     plt.show()
