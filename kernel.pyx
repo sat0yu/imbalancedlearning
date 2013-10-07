@@ -153,5 +153,6 @@ cdef class NormalizedKernel(FloatKernel):
         self.k = kernel
 
     cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
-        return self.k.val(vec1, vec2) / ( self.k.val(vec1, vec1) * self.k.val(vec2, vec2))
+        cdef double denominator =  np.sqrt(self.k.val(vec1, vec1)) * np.sqrt(self.k.val(vec2, vec2))
+        return self.k.val(vec1, vec2) / denominator
 

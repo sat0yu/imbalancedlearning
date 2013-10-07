@@ -15,32 +15,53 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     # parameter settings
-    mean = [10.]
-    cov = [[3.]]
+    mean = [1.]
+    cov = [[5.]]
     numData = 50
     numBins = 25
     beta = 10.
-    degree = 2
+    degree = 3
+    coef = 1.
     alpha = 10.
 
     dist = NormalDistribution(mean, cov)
     X = dist.create(numData)
     #print X
 
-    plt.subplot(221)
+    plt.subplot(321)
     plt.hist(X, bins=numBins)
     plt.title("Histgram")
-
 
     gk = GaussKernel(beta)
     gram = gk.gram(X)
     membership = np.sum(gram, axis=0)
     y = np.c_[X, membership]
     y = y[y[:,0].argsort()]
-    plt.subplot(222)
+    plt.subplot(322)
     plt.stem(y[:,0], y[:,1])
     plt.plot(X, [0.1]*len(X), 'xr')
-    plt.title("Gauss Kernel (beta=10.0)")
+    plt.title("Gauss Kernel (beta=%f)" % beta)
+
+    lk = LaplaceKernel(alpha)
+    gram = lk.gram(X)
+    membership = np.sum(gram, axis=0)
+    y = np.c_[X, membership]
+    y = y[y[:,0].argsort()]
+    plt.subplot(323)
+    plt.stem(y[:,0], y[:,1])
+    plt.plot(X, [0.1]*len(X), 'xr')
+    plt.title("Laplace Kernel (alpha=%f)" % alpha)
+
+    flk = FloatLinearKernel()
+    nlk = NormalizedKernel(flk)
+    gram = nlk.gram(X)
+    membership = np.sum(gram, axis=0)
+    y = np.c_[X, membership]
+    y = y[y[:,0].argsort()]
+    plt.subplot(324)
+    plt.stem(y[:,0], y[:,1])
+    plt.plot(X, np.zeros(len(X)), 'xr')
+    plt.title("Linear Kernel")
 
     pk = PolyKernel(degree)
     lpk = NormalizedKernel(pk)
@@ -48,20 +69,20 @@ if __name__ == '__main__':
     membership = np.sum(gram, axis=0)
     y = np.c_[X, membership]
     y = y[y[:,0].argsort()]
-    plt.subplot(223)
+    plt.subplot(325)
     plt.stem(y[:,0], y[:,1])
-    plt.plot(X, [0.0005]*len(X), 'xr')
-    plt.title("Normalized 2-Poly Kernel (degree=2, coef=0)")
+    plt.plot(X, [0.1]*len(X), 'xr')
+    plt.title("Normalized %d-Poly Kernel (degree=%d, coef=0.0)" % (degree, degree))
 
-
-    lk = LaplaceKernel(alpha)
-    gram = lk.gram(X)
+    pk = PolyKernel(degree, coef)
+    lpk = NormalizedKernel(pk)
+    gram = lpk.gram(X)
     membership = np.sum(gram, axis=0)
     y = np.c_[X, membership]
     y = y[y[:,0].argsort()]
-    plt.subplot(224)
+    plt.subplot(326)
     plt.stem(y[:,0], y[:,1])
     plt.plot(X, [0.1]*len(X), 'xr')
-    plt.title("Laplace Kernel (alpha=10.)")
+    plt.title("Normalized %d-Poly Kernel (degree=%d, coef=%f)" % (degree, degree, coef))
 
     plt.show()
