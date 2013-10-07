@@ -136,3 +136,23 @@ cdef class PolyKernel(FloatKernel):
 
     cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
         return (np.dot(vec1, vec2) + self.__coef0)**self.__degree
+
+cdef class LaplaceKernel(FloatKernel):
+    cdef double alpha
+
+    def __init__(self, double alpha):
+        self.alpha = alpha
+
+    cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
+        return np.exp(-self.alpha * np.sum(np.abs(vec1-vec2)))
+
+cdef class NormalizedKernel(FloatKernel):
+    cdef object k
+
+    def __init__(self, object kernel):
+        self.k = kernel
+
+    cpdef double val(self, np.ndarray[DTYPE_float_t, ndim=1] vec1, np.ndarray[DTYPE_float_t, ndim=1] vec2):
+        cdef double denominator =  np.sqrt(self.k.val(vec1, vec1)) * np.sqrt(self.k.val(vec2, vec2))
+        return self.k.val(vec1, vec2) / denominator
+
