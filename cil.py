@@ -26,32 +26,39 @@ class KernelProbabilityFuzzySVM(FloatKernel):
 
         return (cPos, cNeg)
 
-    def sort_by_label(self, label, sample):
+    def precompute(self, sample, label, class_label=[1,-1]):
+        # sort given sample by their label
         dataset = np.c_[label, sample]
         dataset = dataset[dataset[:,0].argsort()]
-        return (dataset[:,0], dataset[:,1:])
-
-    def fit(self, sample, label, C=1., class_label=[1,-1]):
-        # equip weight of each class
-        cPos, cNeg = self.class_weight(sample, label, class_label)
-
-        # sort given sample by their label
-        label, self.sample = self.sort_by_label(label, sample)
+        label, sample = dataset[:,0], dataset[:,1:]
 
         # count sample belong to each class
         numPos = len(label[label[:]==class_label[0]])
         numNeg = len(label[label[:]==class_label[1]])
 
         # calc. gram matrix and then sample_weight
-        gram = self.kernel.gram(self.sample)
+        gram = self.kernel.gram(sample)
         nFront, nBack = (numNeg, numPos) if class_label[0] > class_label[1] else (numPos, numNeg)
         wFront = np.sum(gram[:nFront,:nFront], axis=0)
         wBack = np.sum(gram[nFront:,nFront:], axis=0)
         weight = np.r_[wFront / nFront, wBack / nBack]
 
+        return (sample, gram, label, weight)
+
+    def fit(self, sample, label, C=1., class_label=[1,-1], gram=None, sample_weight=None):
+        # equip weight of each class
+        cPos, cNeg = self.class_weight(sample, label, class_label)
+
+        # given both gram matrix and sample_weight
+        if gram is not None and sample_weight is not None:
+            self.sample = sample
+        # NOT precomputed
+        else:
+            self.sample, gram, label, sample_weight = self.precompute(sample, label, class_label)
+
         # ready and fit SVM
         self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
-        self.clf.fit(gram, label, sample_weight=weight)
+        self.clf.fit(gram, label, sample_weight=sample_weight)
 
     def predict(self, target):
         mat = self.kernel.matrix(target, self.sample)
@@ -65,7 +72,8 @@ def multiproc(args):
     predict = clf.predict(Y)
 
     #acc,accP,accN,g = evaluation(predict, answer)
-    #print "[C:%f]%f\t%f\t%f\t%f" % (C,acc,accP,accN,g)
+    #print "[C:%f\tbeta:%f]" % (C,beta)
+    #print "%f\t%f\t%f\t%f" % (acc,accP,accN,g)
     #return (acc,accP,accN,g)
 
     return evaluation(predict, answer)
@@ -85,7 +93,7 @@ def procedure(dataset, nCV=5, **kwargs):
         # ready parametersearch
         pseudo = np.c_[label, X]
         pool = multiprocessing.Pool()
-        opt_beta, opt_C, maxScore = 0., 0., -999.
+        opt_beta, opt_C, max_g = 0., 0., -999.
 
         # rough parameter search
         for C in rough_C:
@@ -95,12 +103,12 @@ def procedure(dataset, nCV=5, **kwargs):
 
                 acc, accP, accN = np.average(np.array(buf), axis=0)[:3]
                 g = np.sqrt(accP * accN)
-                if g > maxScore:
-                    maxScore, opt_C, opt_beta = g, C, beta
-        print "[rough search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,g)
+                if g > max_g:
+                    max_g, opt_C, opt_beta = g, C, beta
+        print "[rough search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
 
         # narrow parameter search
-        maxScore = -999.
+        max_g = -999.
         for C in [opt_C*(10**j) for j in narrow_space]:
             for beta in [opt_beta*(10**i) for i in narrow_space]:
                 args = [ (beta, C) + elem for elem in dataset_iterator(pseudo, nCV) ]
@@ -108,9 +116,9 @@ def procedure(dataset, nCV=5, **kwargs):
 
                 acc, accP, accN = np.average(np.array(buf), axis=0)[:3]
                 g = np.sqrt(accP * accN)
-                if g > maxScore:
-                    maxScore, opt_C, opt_beta = g, C, beta
-        print "[narrow search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,g)
+                if g > max_g:
+                    max_g, opt_C, opt_beta = g, C, beta
+        print "[narrow search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
 
         # classify using searched params
         gk = GaussKernel(opt_beta)
