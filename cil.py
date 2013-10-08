@@ -65,18 +65,18 @@ class KernelProbabilityFuzzySVM(FloatKernel):
         return self.clf.predict(mat)
 
 def multiproc(args):
-    beta, C, Y, answer, X, label = args
+    rough_C, beta, Y, answer, X, label = args
 
-    clf = KernelProbabilityFuzzySVM(GaussKernel(beta))
-    clf.fit(X, label, C=C)
-    predict = clf.predict(Y)
+    clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
+    X, gram, label, weight = clf.precompute(X, label)
 
-    #acc,accP,accN,g = evaluation(predict, answer)
-    #print "[C:%f\tbeta:%f]" % (C,beta)
-    #print "%f\t%f\t%f\t%f" % (acc,accP,accN,g)
-    #return (acc,accP,accN,g)
+    res = []
+    for _C in rough_C:
+        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        predict = clf.predict(Y)
+        res.append( (_C,)+evaluation(predict, answer) )
 
-    return evaluation(predict, answer)
+    return res
 
 def procedure(dataset, nCV=5, **kwargs):
     # ready parameter search space
@@ -96,29 +96,40 @@ def procedure(dataset, nCV=5, **kwargs):
         opt_beta, opt_C, max_g = 0., 0., -999.
 
         # rough parameter search
-        for C in rough_C:
-            for beta in rough_beta:
-                args = [ (beta, C) + elem for elem in dataset_iterator(pseudo, nCV) ]
-                buf = pool.map(multiproc, args)
+        for beta in rough_beta:
+            args = [ (rough_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
+            res = pool.map(multiproc, args)
 
-                acc, accP, accN = np.average(np.array(buf), axis=0)[:3]
-                g = np.sqrt(accP * accN)
-                if g > max_g:
-                    max_g, opt_C, opt_beta = g, C, beta
+            res_foreach_dataset = np.array(res)
+            #print res_foreach_dataset.shape
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
+            #print res_foreach_C.shape
+
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
+                _g = np.sqrt(_accP * _accN)
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+
         print "[rough search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
+        sys.stdout.flush()
 
         # narrow parameter search
         max_g = -999.
-        for C in [opt_C*(10**j) for j in narrow_space]:
-            for beta in [opt_beta*(10**i) for i in narrow_space]:
-                args = [ (beta, C) + elem for elem in dataset_iterator(pseudo, nCV) ]
-                buf = pool.map(multiproc, args)
+        narrow_C = [opt_C*(10**j) for j in narrow_space]
+        for beta in [opt_beta*(10**i) for i in narrow_space]:
+            args = [ (narrow_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
+            res = pool.map(multiproc, args)
 
-                acc, accP, accN = np.average(np.array(buf), axis=0)[:3]
-                g = np.sqrt(accP * accN)
-                if g > max_g:
-                    max_g, opt_C, opt_beta = g, C, beta
+            res_foreach_dataset = np.array(res)
+            #print res_foreach_dataset.shape
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
+            #print res_foreach_C.shape
+
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
+                _g = np.sqrt(_accP * _accN)
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+
         print "[narrow search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
+        sys.stdout.flush()
 
         # classify using searched params
         gk = GaussKernel(opt_beta)
