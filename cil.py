@@ -26,32 +26,39 @@ class KernelProbabilityFuzzySVM(FloatKernel):
 
         return (cPos, cNeg)
 
-    def sort_by_label(self, label, sample):
+    def precompute(self, sample, label, class_label=[1,-1]):
+        # sort given sample by their label
         dataset = np.c_[label, sample]
         dataset = dataset[dataset[:,0].argsort()]
-        return (dataset[:,0], dataset[:,1:])
-
-    def fit(self, sample, label, C=1., class_label=[1,-1]):
-        # equip weight of each class
-        cPos, cNeg = self.class_weight(sample, label, class_label)
-
-        # sort given sample by their label
-        label, self.sample = self.sort_by_label(label, sample)
+        label, sample = dataset[:,0], dataset[:,1:]
 
         # count sample belong to each class
         numPos = len(label[label[:]==class_label[0]])
         numNeg = len(label[label[:]==class_label[1]])
 
         # calc. gram matrix and then sample_weight
-        gram = self.kernel.gram(self.sample)
+        gram = self.kernel.gram(sample)
         nFront, nBack = (numNeg, numPos) if class_label[0] > class_label[1] else (numPos, numNeg)
         wFront = np.sum(gram[:nFront,:nFront], axis=0)
         wBack = np.sum(gram[nFront:,nFront:], axis=0)
         weight = np.r_[wFront / nFront, wBack / nBack]
 
+        return (sample, gram, label, weight)
+
+    def fit(self, sample, label, C=1., class_label=[1,-1], gram=None, sample_weight=None):
+        # equip weight of each class
+        cPos, cNeg = self.class_weight(sample, label, class_label)
+
+        # given both gram matrix and sample_weight
+        if gram is not None and sample_weight is not None:
+            self.sample = sample
+        # NOT precomputed
+        else:
+            self.sample, gram, label, sample_weight = self.precompute(sample, label, class_label)
+
         # ready and fit SVM
         self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
-        self.clf.fit(gram, label, sample_weight=weight)
+        self.clf.fit(gram, label, sample_weight=sample_weight)
 
     def predict(self, target):
         mat = self.kernel.matrix(target, self.sample)
