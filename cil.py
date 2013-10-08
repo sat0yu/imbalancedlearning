@@ -72,7 +72,8 @@ def multiproc(args):
     predict = clf.predict(Y)
 
     #acc,accP,accN,g = evaluation(predict, answer)
-    #print "[C:%f]%f\t%f\t%f\t%f" % (C,acc,accP,accN,g)
+    #print "[C:%f\tbeta:%f]" % (C,beta)
+    #print "%f\t%f\t%f\t%f" % (acc,accP,accN,g)
     #return (acc,accP,accN,g)
 
     return evaluation(predict, answer)
@@ -92,7 +93,7 @@ def procedure(dataset, nCV=5, **kwargs):
         # ready parametersearch
         pseudo = np.c_[label, X]
         pool = multiprocessing.Pool()
-        opt_beta, opt_C, maxScore = 0., 0., -999.
+        opt_beta, opt_C, max_g = 0., 0., -999.
 
         # rough parameter search
         for C in rough_C:
@@ -102,12 +103,12 @@ def procedure(dataset, nCV=5, **kwargs):
 
                 acc, accP, accN = np.average(np.array(buf), axis=0)[:3]
                 g = np.sqrt(accP * accN)
-                if g > maxScore:
-                    maxScore, opt_C, opt_beta = g, C, beta
-        print "[rough search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,g)
+                if g > max_g:
+                    max_g, opt_C, opt_beta = g, C, beta
+        print "[rough search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
 
         # narrow parameter search
-        maxScore = -999.
+        max_g = -999.
         for C in [opt_C*(10**j) for j in narrow_space]:
             for beta in [opt_beta*(10**i) for i in narrow_space]:
                 args = [ (beta, C) + elem for elem in dataset_iterator(pseudo, nCV) ]
@@ -115,9 +116,9 @@ def procedure(dataset, nCV=5, **kwargs):
 
                 acc, accP, accN = np.average(np.array(buf), axis=0)[:3]
                 g = np.sqrt(accP * accN)
-                if g > maxScore:
-                    maxScore, opt_C, opt_beta = g, C, beta
-        print "[narrow search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,g)
+                if g > max_g:
+                    max_g, opt_C, opt_beta = g, C, beta
+        print "[narrow search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
 
         # classify using searched params
         gk = GaussKernel(opt_beta)
