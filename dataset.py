@@ -50,3 +50,5 @@ if __name__ == '__main__':
 
     # sed 's/,0$/,-1/g' pima-indians-diabetes.data > pima-indians-diabetes.rplcd
     Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+
+    # sed 's/^ham\t/-1\t/g' SMSSpamCollection | sed 's/^spam\t/1\t/g' > SMSSpamCollection.rplcd
