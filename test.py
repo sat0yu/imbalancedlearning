@@ -16,4 +16,5 @@ if __name__ == '__main__':
     X = dataset['1']
 
     sp = SpectrumKernel(2)
-    print sp.gram(X[:100])
+    print sp.gram(X)
+    print sp.matrix(X[:10],X)
