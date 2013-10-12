@@ -171,7 +171,9 @@ def procedure(dataset, nCV=5, **kwargs):
         clf = KernelProbabilityFuzzySVM(gk)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
-        scores.append( evaluation(predict, answer) )
+        e = evaluation(predict, answer)
+        print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
+        scores.append(e)
 
     # average evaluation score
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
