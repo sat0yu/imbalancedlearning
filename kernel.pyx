@@ -21,7 +21,7 @@ cdef class IntKernel:
         cdef int i,j
         for i in range(N):
             for j in range(i, N):
-                gm[j][i] = gm[i][j] = self.val(X[i], X[j])
+                gm[j,i] = gm[i,j] = self.val(X[i], X[j])
         return gm
 
     cpdef np.ndarray matrix(self, np.ndarray[DTYPE_int_t, ndim=2] X1, np.ndarray[DTYPE_int_t, ndim=2] X2):
@@ -31,7 +31,7 @@ cdef class IntKernel:
         cdef int i,j
         for i in range(N):
             for j in range(M):
-                mat[i][j] = self.val(X1[i], X2[j])
+                mat[i,j] = self.val(X1[i], X2[j])
         return mat
 
 cdef class FloatKernel:
@@ -46,7 +46,7 @@ cdef class FloatKernel:
         cdef int i,j
         for i in range(N):
             for j in range(i, N):
-                gm[j][i] = gm[i][j] = self.val(X[i], X[j])
+                gm[j,i] = gm[i,j] = self.val(X[i], X[j])
         return gm
 
     cpdef np.ndarray matrix(self, np.ndarray[DTYPE_float_t, ndim=2] X1, np.ndarray[DTYPE_float_t, ndim=2] X2):
@@ -56,7 +56,7 @@ cdef class FloatKernel:
         cdef int i,j
         for i in range(N):
             for j in range(M):
-                mat[i][j] = self.val(X1[i], X2[j])
+                mat[i,j] = self.val(X1[i], X2[j])
         return mat
 
 cdef class FloatLinearKernel(FloatKernel):
