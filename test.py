@@ -11,10 +11,10 @@ pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
 from nonvectorial import *
 
 if __name__ == '__main__':
-    dataset = np.loadtxt("data/SMSSpamCollection.rplcd", delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
-    label = dataset['0']
-    X = dataset['1']
+    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
+    label = spam.raw['0']
+    X = spam.raw['1']
 
     sp = SpectrumKernel(2)
-    print sp.gram(X)
+    print sp.gram(X[:10])
     print sp.matrix(X[:10],X)

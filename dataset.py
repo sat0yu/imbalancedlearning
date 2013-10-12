@@ -4,22 +4,23 @@ import os
 import sys
 
 class Dataset():
-    def __init__(self, filename, label_index=0, **kwargs):
+    def __init__(self, filename, label_index=0, isNonvectorial=False, **kwargs):
         if not os.path.exists(filename):
             raise IOError("can not find the file named: %s" % filename)
 
         self.raw = np.loadtxt(filename, **kwargs)
 
-        if label_index >= 0:
-            self.label = self.raw[:,label_index]
-            left = self.raw[:,:label_index:]
-            right = self.raw[:,label_index+1:]
-            self.data = np.c_[left, right]
-        else:
-            # if given label index is negative,
-            # forcibly use -1 as index number
-            self.label = self.raw[:,-1]
-            self.data = self.raw[:,:-1]
+        if not isNonvectorial:
+            if label_index >= 0:
+                self.label = self.raw[:,label_index]
+                left = self.raw[:,:label_index:]
+                right = self.raw[:,label_index+1:]
+                self.data = np.c_[left, right]
+            else:
+                # if given label index is negative,
+                # forcibly use -1 as index number
+                self.label = self.raw[:,-1]
+                self.data = self.raw[:,:-1]
 
 if __name__ == '__main__':
     # values in datafile most be preproccessed, using shell cmd like below
@@ -52,3 +53,4 @@ if __name__ == '__main__':
     Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
 
     # sed 's/^ham\t/-1\t/g' SMSSpamCollection | sed 's/^spam\t/1\t/g' > SMSSpamCollection.rplcd
+    Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
