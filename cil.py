@@ -134,14 +134,14 @@ def procedure(dataset, nCV=5, **kwargs):
         # classify using searched params
         gk = GaussKernel(opt_beta)
         clf = KernelProbabilityFuzzySVM(gk)
-        clf.fit(X, label)
+        clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
         scores.append( evaluation(predict, answer) )
 
     # average evaluation score
-    acc, accP, accN = np.average(np.array(scores), axis=0)[:3]
-    g = np.sqrt(accP * accN)
-    print "acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % (acc,accP,accN,g)
+    acc, accP, accN, g = np.average(np.array(scores), axis=0)
+    _g = np.sqrt(accP * accN)
+    print "acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
     posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
