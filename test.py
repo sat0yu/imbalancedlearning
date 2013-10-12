@@ -16,8 +16,4 @@ if __name__ == '__main__':
     X = dataset['1']
 
     sp = SpectrumKernel(2)
-
-    for i in range(0,len(X)-1,2):
-        print X[i], len(X[i])
-        print X[i+1], len(X[i+1])
-        print sp.val(X[i], X[i+1])
+    print sp.gram(X[:100])
