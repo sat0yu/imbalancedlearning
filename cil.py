@@ -11,6 +11,41 @@ pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
 from kernel import *
 from mlutil import *
 
+class DifferentErrorCosts(FloatKernel):
+    def __init__(self, kernel):
+        self.kernel = kernel
+
+    def class_weight(self, label, class_label=[1,-1]):
+        numPos = float(len(label[label[:]==class_label[0]]))
+        numNeg = float(len(label[label[:]==class_label[1]]))
+
+        if numPos < numNeg:
+            cPos, cNeg = 1., numPos / numNeg
+        else:
+            cPos, cNeg = numNeg / numPos, 1.
+
+        return (cPos, cNeg)
+
+    def precompute(self, sample):
+        return self.kernel.gram(sample)
+
+    def fit(self, sample, label, C=1., class_label=[1,-1], gram=None):
+        # equip weight of each class
+        cPos, cNeg = self.class_weight(label, class_label)
+
+        self.sample = sample
+        # NOT precomputed
+        if gram is None:
+            gram = self.precompute(sample)
+
+        # ready and fit SVM
+        self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
+        self.clf.fit(gram, label)
+
+    def predict(self, target):
+        mat = self.kernel.matrix(target, self.sample)
+        return self.clf.predict(mat)
+
 class KernelProbabilityFuzzySVM(FloatKernel):
     def __init__(self, kernel):
         self.kernel = kernel
@@ -67,12 +102,12 @@ class KernelProbabilityFuzzySVM(FloatKernel):
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
-    clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
-    X, gram, label, weight = clf.precompute(X, label)
+    clf = DifferentErrorCosts( GaussKernel(beta) )
+    gram = clf.precompute(X)
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        clf.fit(X, label, C=_C, gram=gram)
         predict = clf.predict(Y)
         res.append( (_C,)+evaluation(predict, answer) )
 
