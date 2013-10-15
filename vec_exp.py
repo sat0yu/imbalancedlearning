@@ -26,7 +26,7 @@ def multiproc(args):
 
     return res
 
-def procedure(dataset, nCV=5, **kwargs):
+def procedure(dataname, dataset, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
@@ -34,9 +34,11 @@ def procedure(dataset, nCV=5, **kwargs):
 
     # cross varidation
     scores = []
-    for Y,answer,X,label in dataset_iterator(dataset, nCV, **kwargs):
-        print "train samples (pos:%d, neg:%d)" % (len(label[label[:]==1]),len(label[label[:]==-1]))
-        print "test samples (pos:%d, neg:%d)" % (len(answer[answer[:]==1]),len(answer[answer[:]==-1]))
+    for i_CV, (Y,answer,X,label) in enumerate( dataset_iterator(dataset, nCV, **kwargs) ):
+        pos, neg = len(label[label[:]==1]),len(label[label[:]==-1])
+        print "%s(%d/%d): train samples (pos:%d, neg:%d)" % (dataname, i_CV, nCV, pos, neg)
+        pos, neg = len(answer[answer[:]==1]),len(answer[answer[:]==-1])
+        print "%s(%d/%d): test samples (pos:%d, neg:%d)" % (dataname, i_CV, nCV, pos, neg)
 
         # ready parametersearch
         pseudo = np.c_[label, X]
@@ -98,28 +100,28 @@ if __name__ == '__main__':
     negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
     id = ImbalancedData(posDist, negDist, 50.)
     dataset = id.getSample(5000)
-    procedure(dataset, nCV=4, label_index=0)
+    procedure('gaussian mix.',dataset, nCV=4, label_index=0)
 
     page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    procedure(page.raw, label_index=-1)
+    procedure('page-block',page.raw, label_index=-1)
 
     yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    procedure(yeast.raw, label_index=-1)
+    procedure('yeast',yeast.raw, label_index=-1)
 
     abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    procedure(abalone.raw, label_index=-1)
+    procedure('abalone',abalone.raw, label_index=-1)
 
     ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    procedure(ecoli.raw, label_index=-1)
+    procedure('ecoli',ecoli.raw, label_index=-1)
 
     transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    procedure(transfusion.raw, label_index=-1)
+    procedure('transfusion',transfusion.raw, label_index=-1)
 
     haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure(haberman.raw, label_index=-1)
+    procedure('haberman',haberman.raw, label_index=-1)
 
     waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure(waveform.raw, label_index=-1)
+    procedure('waveform',waveform.raw, label_index=-1)
 
     pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure(pima.raw, label_index=-1)
+    procedure('pima',pima.raw, label_index=-1)
