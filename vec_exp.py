@@ -62,7 +62,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
                 _g = np.sqrt(_accP * _accN)
                 if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
 
-        print "[rough search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
+        print "[rough search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
         sys.stdout.flush()
 
         # narrow parameter search
@@ -81,7 +81,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
                 _g = np.sqrt(_accP * _accN)
                 if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
 
-        print "[narrow search] opt_beta:%f,\topt_C:%f,\tg:%f" % (opt_beta,opt_C,max_g)
+        print "[narrow search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
         sys.stdout.flush()
 
         # classify using searched params
@@ -97,7 +97,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     # average evaluation score
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
     _g = np.sqrt(accP * accN)
-    print "acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (acc,accP,accN,g,_g)
+    print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
     posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
