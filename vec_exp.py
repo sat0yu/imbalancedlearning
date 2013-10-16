@@ -15,12 +15,15 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
-    clf = DifferentErrorCosts( GaussKernel(beta) )
-    gram = clf.precompute(X)
+    clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
+    #clf = DifferentErrorCosts( GaussKernel(beta) )
+    X, gram, label, weight = clf.precompute(X, label)
+    #gram = clf.precompute(X)
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C, gram=gram)
+        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #clf.fit(X, label, C=_C, gram=gram)
         predict = clf.predict(Y)
         res.append( (_C,)+evaluation(predict, answer) )
 
@@ -83,6 +86,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
         # classify using searched params
         gk = GaussKernel(opt_beta)
+        #clf = DifferentErrorCosts(gk)
         clf = KernelProbabilityFuzzySVM(gk)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
