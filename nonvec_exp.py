@@ -8,7 +8,7 @@ import multiprocessing
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
-from kernel import *
+from nonvectorial import *
 from mlutil import *
 from cil import *
 
@@ -43,13 +43,29 @@ def dataset_iterator(data, label, nCV, label_value=[1,-1]):
 
         yield (X, label, Y, answer)
 
-def multiproc(args):
-    rough_C, beta, Y, answer, X, label = args
+def precompute(kernel, sample, label, class_label=[1,-1]):
+    # count sample belong to each class
+    numPos = len(label[label[:]==class_label[0]])
+    numNeg = len(label[label[:]==class_label[1]])
 
-    clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
-    #clf = DifferentErrorCosts( GaussKernel(beta) )
-    X, gram, label, weight = clf.precompute(X, label)
-    #gram = clf.precompute(X)
+    # calc. gram matrix and then sample_weight
+    gram = kernel.gram(sample)
+    # NOW, WE PUT THE ASSUMPTION THAT POSITIVE(NEGATIVE) LABEL IS 1(-1)
+    # AND GRAM MATRIX IS CREATED FROM THE DATA IN WHICH NEGATIVE DATA IS PLACED BEFORE POSITIVES
+    nFront, nBack = numNeg, numPos
+    wFront = np.sum(gram[:nFront,:nFront], axis=0)
+    wBack = np.sum(gram[nFront:,nFront:], axis=0)
+    weight = np.r_[wFront / nFront, wBack / nBack]
+
+    return (gram, weight)
+
+def multiproc(args):
+    rough_C, p, Y, answer, X, label = args
+
+    sk = SpectrumKernel(p)
+    clf = KernelProbabilityFuzzySVM(sk)
+    #clf = DifferentErrorCosts(sk)
+    gram, weight = precompute(sk, X, label)
 
     res = []
     for _C in rough_C:
@@ -75,12 +91,12 @@ def procedure(X, label, p_list, nCV=5):
 
         # ready parametersearch
         pseudo = np.c_[label, X]
-        pool = multiprocessing.Pool()
-        opt_beta, opt_C, max_g = 0., 0., -999.
+        pool = multiprocessing.Pool(nCV)
+        opt_p, opt_C, max_g = 0., 0., -999.
 
         # rough parameter search
-        for beta in rough_beta:
-            args = [ (rough_C, beta) + elem for elem in dataset_iterator(X, label, nCV) ]
+        for p in p_list:
+            args = [ (rough_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
             res = pool.map(multiproc, args)
 
             res_foreach_dataset = np.array(res)
@@ -90,35 +106,38 @@ def procedure(X, label, p_list, nCV=5):
 
             for _C, _acc, _accP, _accN, _g in res_foreach_C:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+                if _g > max_g: max_g, opt_C, opt_p = _g, _C, p
 
-        print "[rough search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
+        print "[rough search] opt_p:%s,\topt_C:%s,\tg:%f" % (opt_p,opt_C,max_g)
         sys.stdout.flush()
 
         # narrow parameter search
         max_g = -999.
         narrow_C = [opt_C*(10**j) for j in narrow_space]
-        for beta in [opt_beta*(10**i) for i in narrow_space]:
-            args = [ (narrow_C, beta) + elem for elem in dataset_iterator(X, label, nCV) ]
-            res = pool.map(multiproc, args)
 
-            res_foreach_dataset = np.array(res)
-            #print res_foreach_dataset.shape
-            res_foreach_C = np.average(res_foreach_dataset, axis=0)
-            #print res_foreach_C.shape
+        args = [ (narrow_C, opt_p) + elem for elem in dataset_iterator(X, label, nCV) ]
+        res = pool.map(multiproc, args)
 
-            for _C, _acc, _accP, _accN, _g in res_foreach_C:
-                _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+        res_foreach_dataset = np.array(res)
+        #print res_foreach_dataset.shape
+        res_foreach_C = np.average(res_foreach_dataset, axis=0)
+        #print res_foreach_C.shape
 
-        print "[narrow search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
+        for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            _g = np.sqrt(_accP * _accN)
+            if _g > max_g: max_g, opt_C = _g, _C
+
+        print "[narrow search] opt_p:%s,\topt_C:%s,\tg:%f" % (opt_p,opt_C,max_g)
         sys.stdout.flush()
 
         # classify using searched params
-        gk = GaussKernel(opt_beta)
-        #clf = DifferentErrorCosts(gk)
-        clf = KernelProbabilityFuzzySVM(gk)
-        clf.fit(X, label, C=opt_C)
+        sk = SpectrumKernel(opt_p)
+        clf = KernelProbabilityFuzzySVM(sk)
+        #clf = DifferentErrorCosts(sk)
+
+        gram, weight = precompute(sk, X, label)
+        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        #clf.fit(X, label, C=opt_C, gram=gram)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
