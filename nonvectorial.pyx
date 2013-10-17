@@ -63,7 +63,7 @@ cdef class SpectrumKernel(StringKernel):
     cpdef int val(self, char* s, char* t):
         cdef int i,j,k=0
 
-        if not (strlen(s) and strlen(t)): return 0
+        if strlen(s) < self.p or strlen(t) < self.p: return 0
 
         for i in range( strlen(s) - (self.p - 1) + 1 ):
             for j in range( strlen(t) - (self.p - 1) + 1 ):
