@@ -76,7 +76,7 @@ def multiproc(args):
 
     return res
 
-def procedure(X, label, p_list, nCV=5):
+def procedure(X, label, p, nCV=5):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
@@ -92,30 +92,10 @@ def procedure(X, label, p_list, nCV=5):
         # ready parametersearch
         pseudo = np.c_[label, X]
         pool = multiprocessing.Pool(nCV)
-        opt_p, opt_C, max_g = 0., 0., -999.
+        opt_C, max_g = 0., -999.
 
         # rough parameter search
-        for p in p_list:
-            args = [ (rough_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
-            res = pool.map(multiproc, args)
-
-            res_foreach_dataset = np.array(res)
-            #print res_foreach_dataset.shape
-            res_foreach_C = np.average(res_foreach_dataset, axis=0)
-            #print res_foreach_C.shape
-
-            for _C, _acc, _accP, _accN, _g in res_foreach_C:
-                _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_p = _g, _C, p
-
-        print "[rough search] opt_p:%s,\topt_C:%s,\tg:%f" % (opt_p,opt_C,max_g)
-        sys.stdout.flush()
-
-        # narrow parameter search
-        max_g = -999.
-        narrow_C = [opt_C*(10**j) for j in narrow_space]
-
-        args = [ (narrow_C, opt_p) + elem for elem in dataset_iterator(X, label, nCV) ]
+        args = [ (rough_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
         res = pool.map(multiproc, args)
 
         res_foreach_dataset = np.array(res)
@@ -127,11 +107,30 @@ def procedure(X, label, p_list, nCV=5):
             _g = np.sqrt(_accP * _accN)
             if _g > max_g: max_g, opt_C = _g, _C
 
-        print "[narrow search] opt_p:%s,\topt_C:%s,\tg:%f" % (opt_p,opt_C,max_g)
+        print "[rough search] opt_C:%s,\tg:%f" % (opt_C,max_g)
+        sys.stdout.flush()
+
+        # narrow parameter search
+        max_g = -999.
+        narrow_C = [opt_C*(10**j) for j in narrow_space]
+
+        args = [ (narrow_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
+        res = pool.map(multiproc, args)
+
+        res_foreach_dataset = np.array(res)
+        #print res_foreach_dataset.shape
+        res_foreach_C = np.average(res_foreach_dataset, axis=0)
+        #print res_foreach_C.shape
+
+        for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            _g = np.sqrt(_accP * _accN)
+            if _g > max_g: max_g, opt_C = _g, _C
+
+        print "[narrow search] opt_C:%s,\tg:%f" % (opt_C,max_g)
         sys.stdout.flush()
 
         # classify using searched params
-        sk = SpectrumKernel(opt_p)
+        sk = SpectrumKernel(p)
         clf = KernelProbabilityFuzzySVM(sk)
         #clf = DifferentErrorCosts(sk)
 
@@ -146,11 +145,11 @@ def procedure(X, label, p_list, nCV=5):
     # average evaluation score
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
     _g = np.sqrt(accP * accN)
-    print "acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (acc,accP,accN,g,_g)
+    print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
     spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, range(2,11), nCV=5)
+    procedure(X, label, 2, nCV=5)
