@@ -1,7 +1,6 @@
 #coding: utf-8
 import numpy as np
 cimport numpy as np
-from abc import ABCMeta, abstractmethod
 import sys
 
 from libc.stdio cimport printf
@@ -15,11 +14,6 @@ ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
 cdef class StringKernel:
-    #__metaclass__ = ABCMeta
-
-    #@abstractmethod
-    cpdef int val(self, char* X1, char* X2): pass
-
     cpdef np.ndarray gram(self, list_str):
         cdef int i, j, N = len(list_str)
         cdef char** X = <char **>malloc( N * sizeof(char *) )
@@ -71,3 +65,30 @@ cdef class SpectrumKernel(StringKernel):
 
         return k
 
+cdef class NormalizedSpectrumKernel(StringKernel):
+    cdef int p
+
+    def __init__(self, int p):
+        self.p = p
+
+    cpdef double val(self, char* s, char* t):
+        cdef int i,j,k=0,ss=0,tt=0
+        cdef double denominator
+
+        if strlen(s) < self.p or strlen(t) < self.p: return 0.
+
+        for i in range( strlen(s) - (self.p - 1) + 1 ):
+            for j in range( strlen(s) - (self.p - 1) + 1 ):
+                ss += 0 if strncmp(s + i, s + j, self.p) else 1
+
+        for i in range( strlen(t) - (self.p - 1) + 1 ):
+            for j in range( strlen(t) - (self.p - 1) + 1 ):
+                tt += 0 if strncmp(t + i, t + j, self.p) else 1
+
+        denominator = np.sqrt(ss) * np.sqrt(tt)
+
+        for i in range( strlen(s) - (self.p - 1) + 1 ):
+            for j in range( strlen(t) - (self.p - 1) + 1 ):
+                k += 0 if strncmp(s + i, t + j, self.p) else 1
+
+        return k / denominator
