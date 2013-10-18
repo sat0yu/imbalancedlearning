@@ -62,7 +62,7 @@ def precompute(kernel, sample, label, class_label=[1,-1]):
 def multiproc(args):
     rough_C, p, Y, answer, X, label = args
 
-    sk = SpectrumKernel(p)
+    sk = NormalizedSpectrumKernel(p)
     clf = KernelProbabilityFuzzySVM(sk)
     #clf = DifferentErrorCosts(sk)
     gram, weight = precompute(sk, X, label)
@@ -130,7 +130,7 @@ def procedure(X, label, p, nCV=5):
         sys.stdout.flush()
 
         # classify using searched params
-        sk = SpectrumKernel(p)
+        sk = NormalizedSpectrumKernel(p)
         clf = KernelProbabilityFuzzySVM(sk)
         #clf = DifferentErrorCosts(sk)
 
