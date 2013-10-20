@@ -15,15 +15,15 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
-    clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
-    #clf = DifferentErrorCosts( GaussKernel(beta) )
-    X, gram, label, weight = clf.precompute(X, label)
-    #gram = clf.precompute(X)
+    #clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
+    clf = DifferentErrorCosts( GaussKernel(beta) )
+    #X, gram, label, weight = clf.precompute(X, label)
+    gram = clf.precompute(X)
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=_C, gram=gram)
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        clf.fit(X, label, C=_C, gram=gram)
         predict = clf.predict(Y)
         res.append( (_C,)+evaluation(predict, answer) )
 
@@ -86,8 +86,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
         # classify using searched params
         gk = GaussKernel(opt_beta)
-        #clf = DifferentErrorCosts(gk)
-        clf = KernelProbabilityFuzzySVM(gk)
+        clf = DifferentErrorCosts(gk)
+        #clf = KernelProbabilityFuzzySVM(gk)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
@@ -100,11 +100,11 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
-    negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    id = ImbalancedData(posDist, negDist, 50.)
-    dataset = id.getSample(5000)
-    procedure('gaussian mix.', dataset, nCV=4, label_index=0)
+    #posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
+    #negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
+    #id = ImbalancedData(posDist, negDist, 50.)
+    #dataset = id.getSample(5000)
+    #procedure('gaussian mix.', dataset, nCV=4, label_index=0)
 
     ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
     procedure('ecoli', ecoli.raw, label_index=-1)
