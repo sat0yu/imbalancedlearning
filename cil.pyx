@@ -100,3 +100,68 @@ class KernelProbabilityFuzzySVM(FloatKernel):
         mat = self.kernel.matrix(target, self.sample)
         return self.clf.predict(mat)
 
+class FSVMCIL():
+    def __init__(self, beta, decay_function='linear', delta=1., gamma=1.):
+        self.beta = beta
+        self.delta = delta
+        self.gamma = gamma
+
+        if decay_function == 'linear':
+            self.decay_function = self.linear_decay_function
+        elif decay_function == 'exp':
+            self.decay_function = self.exp_decay_function
+        else:
+            raise ValueError("the argument named decay_function expects a velue of 'linear' or 'exp'")
+
+    def linear_decay_function(self, X):
+        denominator = max(X) + self.delta
+        return 1. - (X / denominator)
+
+    def exp_decay_function(self, X):
+        return 2. / ( 1. + np.exp( self.gamma * X ) )
+
+    def class_weight(self, label, class_label=[1,-1]):
+        numPos = float(len(label[label[:]==class_label[0]]))
+        numNeg = float(len(label[label[:]==class_label[1]]))
+
+        if numPos < numNeg:
+            cPos, cNeg = 1., numPos / numNeg
+        else:
+            cPos, cNeg = numNeg / numPos, 1.
+
+        return (cPos, cNeg)
+
+    def dist_from_center(self, X):
+        # calc. center
+        center = np.average(X, axis=0)
+
+        # calc. distance between from center for each sample
+        distance = np.sum(np.abs(X - center)**2, axis=-1)**(1/2.)
+
+        return distance
+
+    def fit(self, sample, label, C=1., class_label=[1,-1]):
+        # equip weight of each class
+        cPos, cNeg = self.class_weight(label, class_label)
+
+        # sort given sample with their label
+        dataset = np.c_[label, sample]
+        dataset = dataset[dataset[:,0].argsort()]
+        label, sample = dataset[:,0], dataset[:,1:]
+
+        # calc. distance
+        numNeg = len(label[label[:]==class_label[1]])
+        negData, posData  = sample[:int(numNeg)], sample[int(numNeg):]
+        posDist = self.dist_from_center(posData)
+        negDist = self.dist_from_center(negData)
+
+        # apply decay function
+        dist = np.r_[negDist, posDist]
+        weight = self.decay_function(dist)
+
+        # ready and fit SVM to given sample
+        self.clf = svm.SVC(kernel='rbf', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
+        self.clf.fit(sample, label, sample_weight=weight)
+
+    def predict(self, target):
+        return self.clf.predict(target)
