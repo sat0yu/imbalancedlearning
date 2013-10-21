@@ -160,7 +160,7 @@ class FSVMCIL():
         weight = self.decay_function(dist)
 
         # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='rbf', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
+        self.clf = svm.SVC(kernel='rbf', gamma=self.beta, C=C, class_weight={label[0]:cPos, label[1]:cNeg})
         self.clf.fit(sample, label, sample_weight=weight)
 
     def predict(self, target):
