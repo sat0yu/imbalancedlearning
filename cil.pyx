@@ -167,7 +167,8 @@ class FSVMCIL():
         clf.fit(X, label)
 
         # calc. distance between from hyperplane
-        distance = (clf.decision_function(X))[:,0]
+        value = (clf.decision_function(X))[:,0]
+        distance = np.abs(value)
 
         return (X, label, distance)
 
@@ -180,8 +181,6 @@ class FSVMCIL():
 
         # apply decay function
         weight = self.decay_function(dist)
-
-        print sample.ndim, sample.shape, label.ndim, label.shape, dist.ndim, dist.shape,weight.ndim, weight.shape
 
         # ready and fit SVM to given sample
         self.clf = svm.SVC(kernel='rbf', gamma=self.beta, C=C, class_weight={label[0]:cPos, label[1]:cNeg})
