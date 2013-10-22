@@ -15,8 +15,8 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
-    #clf = FSVMCIL(beta, decay_function="linear", delta=0.000001)
-    clf = FSVMCIL(beta, decay_function="exp", gamma=0.000001)
+    clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
+    #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
     #clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
     #clf = DifferentErrorCosts( GaussKernel(beta) )
     #X, gram, label, weight = clf.precompute(X, label)
@@ -87,8 +87,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        #clf = FSVMCIL(opt_beta, decay_function="linear", delta=0.000001)
-        clf = FSVMCIL(beta, decay_function="exp", gamma=0.000001)
+        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
         #gk = GaussKernel(opt_beta)
         #clf = DifferentErrorCosts(gk)
         #clf = KernelProbabilityFuzzySVM(gk)
