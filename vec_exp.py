@@ -16,7 +16,8 @@ def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
     #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-    clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+    clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+    #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
     #clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
     #clf = DifferentErrorCosts( GaussKernel(beta) )
     #X, gram, label, weight = clf.precompute(X, label)
@@ -88,7 +89,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
         # classify using searched params
         #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
-        clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+        clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
         #gk = GaussKernel(opt_beta)
         #clf = DifferentErrorCosts(gk)
         #clf = KernelProbabilityFuzzySVM(gk)
@@ -106,8 +108,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 if __name__ == '__main__':
     posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
     negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    id = ImbalancedData(posDist, negDist, 10.)
-    dataset = id.getSample(250)
+    id = ImbalancedData(posDist, negDist, 50.)
+    dataset = id.getSample(5000)
     procedure('gaussian mix.', dataset, nCV=4, label_index=0)
 
     ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)

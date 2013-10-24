@@ -161,6 +161,19 @@ class FSVMCIL():
 
         return (X, label, distance)
 
+    def dist_from_estimated_hyperplane(self, X, label, C=1., class_label=[1,-1]):
+        # sort given sample with their label
+        dataset = np.c_[label, X]
+        dataset = dataset[dataset[:,0].argsort()]
+        label, X = dataset[:,0], dataset[:,1:]
+
+        # calc. gram matrix and then sample_weight
+        kernel = GaussKernel(self.beta)
+        gram = kernel.gram(X)
+        weight = np.dot(np.diag(label), np.dot(gram, label))
+
+        return (X, label, weight)
+
     def dist_from_hyperplane(self, X, label, C=1., class_label=[1,-1]):
         # train conventional SVM
         clf = svm.SVC(kernel='rbf', gamma=self.beta, C=C)
