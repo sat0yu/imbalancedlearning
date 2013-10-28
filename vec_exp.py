@@ -47,7 +47,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
         # ready parametersearch
         pseudo = np.c_[label, X]
-        pool = multiprocessing.Pool()
+        pool = multiprocessing.Pool(nCV)
         opt_beta, opt_C, max_g = 0., 0., -999.
 
         # rough parameter search
@@ -104,11 +104,11 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
-    negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    id = ImbalancedData(posDist, negDist, 10.)
-    dataset = id.getSample(250)
-    procedure('gaussian mix.', dataset, nCV=4, label_index=0)
+    #posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
+    #negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
+    #id = ImbalancedData(posDist, negDist, 10.)
+    #dataset = id.getSample(250)
+    #procedure('gaussian mix.', dataset, nCV=4, label_index=0)
 
     ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
     procedure('ecoli', ecoli.raw, label_index=-1)
