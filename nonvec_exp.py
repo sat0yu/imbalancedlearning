@@ -63,15 +63,20 @@ def multiproc(args):
     rough_C, p, Y, answer, X, label = args
 
     sk = NormalizedSpectrumKernel(p)
-    clf = KernelProbabilityFuzzySVM(sk)
+    #clf = KernelProbabilityFuzzySVM(sk)
     #clf = DifferentErrorCosts(sk)
-    gram, weight = precompute(sk, X, label)
+    #gram, weight = precompute(sk, X, label)
+    gram = sk.gram(X)
+    mat = sk.matrix(Y,X)
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        clf = svm.SVC(kernel='precomputed', C=_C)
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
         #clf.fit(X, label, C=_C, gram=gram)
-        predict = clf.predict(Y)
+        clf.fit(gram, label)
+        #predict = clf.predict(Y)
+        predict = clf.predict(mat)
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -131,13 +136,18 @@ def procedure(X, label, p, nCV=5):
 
         # classify using searched params
         sk = NormalizedSpectrumKernel(p)
-        clf = KernelProbabilityFuzzySVM(sk)
+        #clf = KernelProbabilityFuzzySVM(sk)
         #clf = DifferentErrorCosts(sk)
+        clf = svm.SVC(kernel='precomputed', C=_C)
 
-        gram, weight = precompute(sk, X, label)
-        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        #gram, weight = precompute(sk, X, label)
+        gram = sk.gram(X)
+        mat = sk.matrix(Y,X)
+        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
         #clf.fit(X, label, C=opt_C, gram=gram)
-        predict = clf.predict(Y)
+        clf.fit(gram, label)
+        #predict = clf.predict(Y)
+        predict = clf.predict(mat)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
