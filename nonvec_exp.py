@@ -64,14 +64,19 @@ def multiproc(args):
 
     sk = NormalizedSpectrumKernel(p)
     #clf = KernelProbabilityFuzzySVM(sk)
-    clf = DifferentErrorCosts(sk)
-    gram, weight = precompute(sk, X, label)
+    #clf = DifferentErrorCosts(sk)
+    #gram, weight = precompute(sk, X, label)
+    gram = sk.gram(X)
+    mat = sk.matrix(Y,X)
 
     res = []
     for _C in rough_C:
+        clf = svm.SVC(kernel='precomputed', C=_C)
         #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        clf.fit(X, label, C=_C, gram=gram)
-        predict = clf.predict(Y)
+        #clf.fit(X, label, C=_C, gram=gram)
+        clf.fit(gram, label)
+        #predict = clf.predict(Y)
+        predict = clf.predict(mat)
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -91,7 +96,7 @@ def procedure(X, label, p, nCV=5):
 
         # ready parametersearch
         pseudo = np.c_[label, X]
-        pool = multiprocessing.Pool(3)
+        pool = multiprocessing.Pool(nCV)
         opt_C, max_g = 0., -999.
 
         # rough parameter search
@@ -132,12 +137,17 @@ def procedure(X, label, p, nCV=5):
         # classify using searched params
         sk = NormalizedSpectrumKernel(p)
         #clf = KernelProbabilityFuzzySVM(sk)
-        clf = DifferentErrorCosts(sk)
+        #clf = DifferentErrorCosts(sk)
+        clf = svm.SVC(kernel='precomputed', C=_C)
 
-        gram, weight = precompute(sk, X, label)
+        #gram, weight = precompute(sk, X, label)
+        gram = sk.gram(X)
+        mat = sk.matrix(Y,X)
         #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        clf.fit(X, label, C=opt_C, gram=gram)
-        predict = clf.predict(Y)
+        #clf.fit(X, label, C=opt_C, gram=gram)
+        clf.fit(gram, label)
+        #predict = clf.predict(Y)
+        predict = clf.predict(mat)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
@@ -152,4 +162,4 @@ if __name__ == '__main__':
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 3, nCV=5)
+    procedure(X, label, 2, nCV=5)
