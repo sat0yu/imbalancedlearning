@@ -63,14 +63,14 @@ def multiproc(args):
     rough_C, p, Y, answer, X, label = args
 
     sk = NormalizedSpectrumKernel(p)
-    clf = KernelProbabilityFuzzySVM(sk)
-    #clf = DifferentErrorCosts(sk)
+    #clf = KernelProbabilityFuzzySVM(sk)
+    clf = DifferentErrorCosts(sk)
     gram, weight = precompute(sk, X, label)
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=_C, gram=gram)
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        clf.fit(X, label, C=_C, gram=gram)
         predict = clf.predict(Y)
         res.append( (_C,)+evaluation(predict, answer) )
 
@@ -91,7 +91,7 @@ def procedure(X, label, p, nCV=5):
 
         # ready parametersearch
         pseudo = np.c_[label, X]
-        pool = multiprocessing.Pool(nCV)
+        pool = multiprocessing.Pool(3)
         opt_C, max_g = 0., -999.
 
         # rough parameter search
@@ -131,12 +131,12 @@ def procedure(X, label, p, nCV=5):
 
         # classify using searched params
         sk = NormalizedSpectrumKernel(p)
-        clf = KernelProbabilityFuzzySVM(sk)
-        #clf = DifferentErrorCosts(sk)
+        #clf = KernelProbabilityFuzzySVM(sk)
+        clf = DifferentErrorCosts(sk)
 
         gram, weight = precompute(sk, X, label)
-        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=opt_C, gram=gram)
+        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        clf.fit(X, label, C=opt_C, gram=gram)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
@@ -152,4 +152,4 @@ if __name__ == '__main__':
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 2, nCV=5)
+    procedure(X, label, 3, nCV=5)
