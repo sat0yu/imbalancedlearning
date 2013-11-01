@@ -21,8 +21,8 @@ class NoisyDistributionModel:
 
         return (gram, fx)
 
-    def px(hx, sigma, d, ht_part=0, hc_part=0):
-        hx_sorted = np.sort(hx[:])
+    def px(self, hx, sigma, d, ht_part=0, hc_part=0):
+        hx_sorted = np.sort(hx)
         hc = hx_sorted[-int(np.round(len(hx)*hc_part)+1)]
         ht = hx_sorted[int(np.round(len(hx)*ht_part))]
 
@@ -59,37 +59,30 @@ def search_sigma_d(args):
     gk = GaussKernel(opt_beta)
     clf = NoisyDistributionModel(gk)
     gram, fx = clf.precompute(X, label)
-    print 'gram: done.'
 
     res = []
     for d in d_list:
         weight = clf.px(fx, sigma, d)
-        print 'weight: done.'
         clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        print 'fit: done.'
 
         predict = clf.predict(Y)
         res.append( (d,)+evaluation(predict, answer) )
-        print 'predict: done.'
 
     return res
 
 def search_part(args):
     ht_part, part_list, opt_beta, opt_C, opt_sigma, opt_d, Y, answer, X, label = args
-    print 'search_part called'
 
     gk = GaussKernel(opt_beta)
-    gram = gk.gram(X)
-    mat = gk.matrix(Y,X)
+    clf = NoisyDistributionModel(gk)
+    gram, fx = clf.precompute(X, label)
 
     res = []
     for hc_part in part_list:
-        fk = np.dot(np.diag(label), np.dot(gram, label))
-        weight = px(fk, opt_sigma, opt_d, ht_part, hc_part)
+        weight = clf.px(fx, opt_sigma, opt_d, ht_part, hc_part)
+        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
 
-        clf = svm.SVC(kernel='precomputed', C=opt_C)
-        clf.fit(gram, label, sample_weight=weight)
-        predict = clf.predict(mat)
+        predict = clf.predict(Y)
         res.append( (hc_part,)+evaluation(predict, answer) )
 
     return res
@@ -234,15 +227,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
         # classify using searched params
         gk = GaussKernel(opt_beta)
-        gram = gk.gram(X)
-        hx = np.dot(np.diag(label), np.dot(gram, label))
-        weight = px(hx, opt_sigma, opt_d, opt_ht_part, opt_hc_part)
+        clf = NoisyDistributionModel(gk)
+        clf.fit(X, label, sigma=opt_sigma, d=opt_d, ht_part=opt_ht_part, hc_part=opt_hc_part)
 
-        clf = svm.SVC(kernel='precomputed', C=opt_C)
-        clf.fit(gram, label, sample_weight=weight)
-
-        mat = gk.matrix(Y,X)
-        predict = clf.predict(mat)
+        predict = clf.predict(Y)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
