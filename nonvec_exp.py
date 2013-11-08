@@ -138,7 +138,7 @@ def procedure(X, label, p, nCV=5):
         sk = NormalizedSpectrumKernel(p)
         #clf = KernelProbabilityFuzzySVM(sk)
         #clf = DifferentErrorCosts(sk)
-        clf = svm.SVC(kernel='precomputed', C=_C)
+        clf = svm.SVC(kernel='precomputed', C=opt_C)
 
         #gram, weight = precompute(sk, X, label)
         gram = sk.gram(X)
