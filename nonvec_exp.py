@@ -81,25 +81,25 @@ def multiproc(args):
 
     return res
 
-def procedure(X, label, p, nCV=5):
+def procedure(stringdata, datalabel, p, nCV=5):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
 
     # cross varidation
     scores = []
-    for i_CV, (Y,answer,X,label) in enumerate( dataset_iterator(X, label, nCV) ):
+    for i_CV, (Y,answer,X,label) in enumerate( dataset_iterator(stringdata, datalabel, nCV) ):
         pos, neg = len(label[label[:]==1]),len(label[label[:]==-1])
         print "[%d/%d]: train samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
         pos, neg = len(answer[answer[:]==1]),len(answer[answer[:]==-1])
         print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
 
         # ready parametersearch
-        pseudo = np.c_[label, X]
         pool = multiprocessing.Pool(nCV)
-        opt_C, max_g = 0., -999.
+        opt_C = 0.
 
         # rough parameter search
+        max_g = -999.
         args = [ (rough_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
         res = pool.map(multiproc, args)
 
