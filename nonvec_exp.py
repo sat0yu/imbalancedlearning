@@ -60,14 +60,14 @@ def precompute(kernel, sample, label, class_label=[1,-1]):
     return (gram, weight)
 
 def multiproc(args):
-    rough_C, p, Y, answer, X, label = args
+    rough_C, beta, Y, answer, X, label = args
 
-    sk = NormalizedSpectrumKernel(p)
-    #clf = KernelProbabilityFuzzySVM(sk)
-    #clf = DifferentErrorCosts(sk)
-    #gram, weight = precompute(sk, X, label)
-    gram = sk.gram(X)
-    mat = sk.matrix(Y,X)
+    edk = EditDistanceKernel(beta)
+    #clf = KernelProbabilityFuzzySVM(edk)
+    #clf = DifferentErrorCosts(edk)
+    #gram, weight = precompute(edk, X, label)
+    gram = edk.gram(X)
+    mat = edk.matrix(Y,X)
 
     res = []
     for _C in rough_C:
@@ -75,15 +75,16 @@ def multiproc(args):
         #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
         #clf.fit(X, label, C=_C, gram=gram)
         clf.fit(gram, label)
-        #predict = clf.predict(Y)
+        #predict = clf.predict(mat, precomputed=True)
         predict = clf.predict(mat)
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
 
-def procedure(stringdata, datalabel, p, nCV=5):
+def procedure(stringdata, datalabel, nCV=5):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
+    rough_beta = [10**i for i in range(-9,1)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
 
     # cross varidation
@@ -96,57 +97,54 @@ def procedure(stringdata, datalabel, p, nCV=5):
 
         # ready parametersearch
         pool = multiprocessing.Pool(nCV)
-        opt_C = 0.
+        opt_beta, opt_C = 0., 0.
 
         # rough parameter search
         max_g = -999.
-        args = [ (rough_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
-        res = pool.map(multiproc, args)
+        for beta in rough_beta:
+            args = [ (rough_C, beta) + elem for elem in dataset_iterator(X, label, nCV) ]
+            res = pool.map(multiproc, args)
 
-        res_foreach_dataset = np.array(res)
-        #print res_foreach_dataset.shape
-        res_foreach_C = np.average(res_foreach_dataset, axis=0)
-        #print res_foreach_C.shape
+            res_foreach_dataset = np.array(res)
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-        for _C, _acc, _accP, _accN, _g in res_foreach_C:
-            _g = np.sqrt(_accP * _accN)
-            if _g > max_g: max_g, opt_C = _g, _C
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
+                _g = np.sqrt(_accP * _accN)
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
 
-        print "[rough search] opt_C:%s,\tg:%f" % (opt_C,max_g)
+        print "[rough search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
         sys.stdout.flush()
 
         # narrow parameter search
         max_g = -999.
         narrow_C = [opt_C*(10**j) for j in narrow_space]
+        for beta in [opt_beta*(10**i) for i in narrow_space]:
+            args = [ (narrow_C, beta) + elem for elem in dataset_iterator(X, label, nCV) ]
+            res = pool.map(multiproc, args)
 
-        args = [ (narrow_C, p) + elem for elem in dataset_iterator(X, label, nCV) ]
-        res = pool.map(multiproc, args)
+            res_foreach_dataset = np.array(res)
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-        res_foreach_dataset = np.array(res)
-        #print res_foreach_dataset.shape
-        res_foreach_C = np.average(res_foreach_dataset, axis=0)
-        #print res_foreach_C.shape
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
+                _g = np.sqrt(_accP * _accN)
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
 
-        for _C, _acc, _accP, _accN, _g in res_foreach_C:
-            _g = np.sqrt(_accP * _accN)
-            if _g > max_g: max_g, opt_C = _g, _C
-
-        print "[narrow search] opt_C:%s,\tg:%f" % (opt_C,max_g)
+        print "[narrow search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
         sys.stdout.flush()
 
         # classify using searched params
-        sk = NormalizedSpectrumKernel(p)
-        #clf = KernelProbabilityFuzzySVM(sk)
-        #clf = DifferentErrorCosts(sk)
+        edk = EditDistanceKernel(opt_beta)
+        #clf = KernelProbabilityFuzzySVM(edk)
+        #clf = DifferentErrorCosts(edk)
         clf = svm.SVC(kernel='precomputed', C=opt_C)
 
-        #gram, weight = precompute(sk, X, label)
-        gram = sk.gram(X)
-        mat = sk.matrix(Y,X)
+        #gram, weight = precompute(edk, X, label)
+        gram = edk.gram(X)
+        mat = edk.matrix(Y,X)
         #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
         #clf.fit(X, label, C=opt_C, gram=gram)
         clf.fit(gram, label)
-        #predict = clf.predict(Y)
+        #predict = clf.predict(mat, precomputed=True)
         predict = clf.predict(mat)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
@@ -155,11 +153,11 @@ def procedure(stringdata, datalabel, p, nCV=5):
     # average evaluation score
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
     _g = np.sqrt(accP * accN)
-    print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
+    print "[Levenshtein] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
+    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S1024')})
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 2, nCV=5)
+    procedure(X, label, nCV=5)
