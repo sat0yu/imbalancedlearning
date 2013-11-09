@@ -13,7 +13,42 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
-cdef class StringKernel:
+cdef class IntStringKernel:
+    cpdef np.ndarray gram(self, list_str):
+        cdef int i, j, N = len(list_str)
+        cdef char** X = <char **>malloc( N * sizeof(char *) )
+        cdef np.ndarray[DTYPE_int_t, ndim=2] gm = np.identity(N, dtype=DTYPE_int)
+
+        for i in range(N):
+            X[i] = PyString_AsString(list_str[i])
+
+        for i in range(N):
+            for j in range(i, N):
+                gm[j,i] = gm[i,j] = self.val(X[i], X[j])
+
+        free(X)
+        return gm
+
+    cpdef np.ndarray matrix(self, list_str1, list_str2):
+        cdef int i, j, N=len(list_str1), M=len(list_str2)
+        cdef char** X1 = <char **>malloc( N * sizeof(char *) )
+        cdef char** X2 = <char **>malloc( M * sizeof(char *) )
+        cdef np.ndarray[DTYPE_int_t, ndim=2] mat = np.zeros((N,M), dtype=DTYPE_int)
+
+        for i in range(N):
+            X1[i] = PyString_AsString(list_str1[i])
+        for i in range(M):
+            X2[i] = PyString_AsString(list_str2[i])
+
+        for i in range(N):
+            for j in range(M):
+                mat[i,j] = self.val(X1[i], X2[j])
+
+        free(X1)
+        free(X2)
+        return mat
+
+cdef class FloatStringKernel:
     cpdef np.ndarray gram(self, list_str):
         cdef int i, j, N = len(list_str)
         cdef char** X = <char **>malloc( N * sizeof(char *) )
@@ -48,7 +83,7 @@ cdef class StringKernel:
         free(X2)
         return mat
 
-cdef class SpectrumKernel(StringKernel):
+cdef class SpectrumKernel(IntStringKernel):
     cdef int p
 
     def __init__(self, int p):
@@ -65,7 +100,7 @@ cdef class SpectrumKernel(StringKernel):
 
         return k
 
-cdef class NormalizedSpectrumKernel(StringKernel):
+cdef class NormalizedSpectrumKernel(FloatStringKernel):
     cdef int p
 
     def __init__(self, int p):
