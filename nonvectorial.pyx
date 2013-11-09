@@ -59,8 +59,8 @@ cdef class SpectrumKernel(StringKernel):
 
         if strlen(s) < self.p or strlen(t) < self.p: return 0
 
-        for i in range( strlen(s) - (self.p - 1) + 1 ):
-            for j in range( strlen(t) - (self.p - 1) + 1 ):
+        for i in range( strlen(s) - (self.p - 1) ):
+            for j in range( strlen(t) - (self.p - 1) ):
                 k += 0 if strncmp(s + i, t + j, self.p) else 1
 
         return k
@@ -72,23 +72,20 @@ cdef class NormalizedSpectrumKernel(StringKernel):
         self.p = p
 
     cpdef double val(self, char* s, char* t):
-        cdef int i,j,k=0,ss=0,tt=0
-        cdef double denominator
+        cdef int i,j,k=0,ss=0,tt=0,slen=strlen(s),tlen=strlen(t)
 
-        if strlen(s) < self.p or strlen(t) < self.p: return 0.
+        if slen < self.p or tlen < self.p: return 0.
 
-        for i in range( strlen(s) - (self.p - 1) + 1 ):
-            for j in range( strlen(s) - (self.p - 1) + 1 ):
+        for i in range( slen - (self.p - 1) ):
+            for j in range( slen - (self.p - 1) ):
                 ss += 0 if strncmp(s + i, s + j, self.p) else 1
 
-        for i in range( strlen(t) - (self.p - 1) + 1 ):
-            for j in range( strlen(t) - (self.p - 1) + 1 ):
+        for i in range( tlen - (self.p - 1) ):
+            for j in range( tlen - (self.p - 1) ):
                 tt += 0 if strncmp(t + i, t + j, self.p) else 1
 
-        denominator = np.sqrt(ss) * np.sqrt(tt)
-
-        for i in range( strlen(s) - (self.p - 1) + 1 ):
-            for j in range( strlen(t) - (self.p - 1) + 1 ):
+        for i in range( slen - (self.p - 1) ):
+            for j in range( tlen - (self.p - 1) ):
                 k += 0 if strncmp(s + i, t + j, self.p) else 1
 
-        return k / denominator
+        return k / np.sqrt( ss * tt )
