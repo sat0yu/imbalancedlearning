@@ -95,7 +95,7 @@ def procedure(stringdata, datalabel, p, nCV=5):
         print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
 
         # ready parametersearch
-        pool = multiprocessing.Pool(nCV)
+        pool = multiprocessing.Pool(2)
         opt_C = 0.
 
         # rough parameter search
@@ -158,7 +158,7 @@ def procedure(stringdata, datalabel, p, nCV=5):
     print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
+    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S1024')})
     label = spam.raw['0']
     X = spam.raw['1']
 
