@@ -57,13 +57,22 @@ cdef class SpectrumKernel(IntStringKernel):
         self.p = p
 
     cpdef int val(self, s, t):
-        cdef int i, j, k=0, slen=len(s), tlen=len(t)
+        cdef int i, k=0, slen=len(s), tlen=len(t)
+        cdef dict buf = {}
 
         if slen < self.p or tlen < self.p: return 0
 
         for i in range( slen - (self.p - 1) ):
-            for j in range( tlen - (self.p - 1) ):
-                k += 1 if s[i:i+self.p] == t[j:j+self.p] else 0
+            try:
+                buf[ s[i:i+self.p] ] += 1
+            except KeyError:
+                buf[ s[i:i+self.p] ] = 1
+
+        for i in range( tlen - (self.p - 1) ):
+            try:
+                k += buf[ t[i:i+self.p] ]
+            except KeyError:
+                pass
 
         return k
 
@@ -73,21 +82,26 @@ cdef class NormalizedSpectrumKernel(FloatStringKernel):
     def __init__(self, int p):
         self.p = p
 
-    cpdef double val(self, s, t):
-        cdef int i,j,k=0,ss=0,tt=0,slen=len(s),tlen=len(t)
-
-        if slen < self.p or tlen < self.p: return 0.
+    cpdef int sub_val(self, s, t):
+        cdef int i, k=0, slen=len(s), tlen=len(t)
+        cdef dict buf = {}
 
         for i in range( slen - (self.p - 1) ):
-            for j in range( slen - (self.p - 1) ):
-                ss += 1 if s[i:i+self.p] == s[j:j+self.p] else 0
+            try:
+                buf[ s[i:i+self.p] ] += 1
+            except KeyError:
+                buf[ s[i:i+self.p] ] = 1
 
         for i in range( tlen - (self.p - 1) ):
-            for j in range( tlen - (self.p - 1) ):
-                tt += 1 if t[i:i+self.p] == t[j:j+self.p] else 0
+            try:
+                k += buf[ t[i:i+self.p] ]
+            except KeyError:
+                pass
 
-        for i in range( slen - (self.p - 1) ):
-            for j in range( tlen - (self.p - 1) ):
-                k += 1 if s[i:i+self.p] == t[j:j+self.p] else 0
+        return k
 
-        return k / np.sqrt( ss * tt )
+
+    cpdef double val(self, s, t):
+        if len(s) < self.p or len(t) < self.p: return 0.
+
+        return self.sub_val(s,t) / np.sqrt( self.sub_val(s,s) * self.sub_val(t,t) )
