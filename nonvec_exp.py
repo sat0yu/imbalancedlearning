@@ -64,19 +64,19 @@ def multiproc(args):
 
     sk = NormalizedSpectrumKernel(p)
     #clf = KernelProbabilityFuzzySVM(sk)
-    #clf = DifferentErrorCosts(sk)
+    clf = DifferentErrorCosts(sk)
     #gram, weight = precompute(sk, X, label)
     gram = sk.gram(X)
     mat = sk.matrix(Y,X)
 
     res = []
     for _C in rough_C:
-        clf = svm.SVC(kernel='precomputed', C=_C)
+        #clf = svm.SVC(kernel='precomputed', C=_C)
         #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=_C, gram=gram)
-        clf.fit(gram, label)
-        #predict = clf.predict(Y)
-        predict = clf.predict(mat)
+        clf.fit(X, label, C=_C, gram=gram)
+        #clf.fit(gram, label)
+        predict = clf.predict(mat, precomputed=True)
+        #predict = clf.predict(mat)
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -95,7 +95,7 @@ def procedure(stringdata, datalabel, p, nCV=5):
         print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
 
         # ready parametersearch
-        pool = multiprocessing.Pool(nCV)
+        pool = multiprocessing.Pool(1)
         opt_C = 0.
 
         # rough parameter search
@@ -137,17 +137,17 @@ def procedure(stringdata, datalabel, p, nCV=5):
         # classify using searched params
         sk = NormalizedSpectrumKernel(p)
         #clf = KernelProbabilityFuzzySVM(sk)
-        #clf = DifferentErrorCosts(sk)
-        clf = svm.SVC(kernel='precomputed', C=opt_C)
+        clf = DifferentErrorCosts(sk)
+        #clf = svm.SVC(kernel='precomputed', C=opt_C)
 
         #gram, weight = precompute(sk, X, label)
         gram = sk.gram(X)
         mat = sk.matrix(Y,X)
         #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=opt_C, gram=gram)
-        clf.fit(gram, label)
-        #predict = clf.predict(Y)
-        predict = clf.predict(mat)
+        clf.fit(X, label, C=opt_C, gram=gram)
+        #clf.fit(gram, label)
+        predict = clf.predict(mat, precomputed=True)
+        #predict = clf.predict(mat)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
@@ -158,7 +158,7 @@ def procedure(stringdata, datalabel, p, nCV=5):
     print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
+    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S1024')})
     label = spam.raw['0']
     X = spam.raw['1']
 
