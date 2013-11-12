@@ -43,9 +43,11 @@ class DifferentErrorCosts(FloatKernel):
         self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
         self.clf.fit(gram, label)
 
-    def predict(self, target):
-        mat = self.kernel.matrix(target, self.sample)
-        return self.clf.predict(mat)
+    def predict(self, target, precomputed=False):
+        if precomputed is False:
+            target = self.kernel.matrix(target, self.sample)
+
+        return self.clf.predict(target)
 
 class KernelProbabilityFuzzySVM(FloatKernel):
     def __init__(self, kernel):
@@ -96,9 +98,11 @@ class KernelProbabilityFuzzySVM(FloatKernel):
         self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
         self.clf.fit(gram, label, sample_weight=sample_weight)
 
-    def predict(self, target):
-        mat = self.kernel.matrix(target, self.sample)
-        return self.clf.predict(mat)
+    def predict(self, target, precomputed=False):
+        if precomputed is False:
+            target = self.kernel.matrix(target, self.sample)
+
+        return self.clf.predict(target)
 
 class FSVMCIL():
     def __init__(self, beta, distance_function='center', decay_function='linear', delta=1., gamma=1.):
