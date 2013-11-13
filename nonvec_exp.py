@@ -162,4 +162,4 @@ if __name__ == '__main__':
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 3, nCV=5)
+    procedure(X, label, 4, nCV=5)
