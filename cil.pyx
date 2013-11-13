@@ -11,6 +11,7 @@ DTYPE_int = np.int
 DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
+np.seterr(over='raise')
 
 class DifferentErrorCosts(FloatKernel):
     def __init__(self, kernel):
@@ -130,8 +131,18 @@ class FSVMCIL():
         denominator = max(X) + self.delta
         return 1. - (X / denominator)
 
-    def exp_decay_function(self, X):
-        return 2. / ( 1. + np.exp( self.gamma * X ) )
+    def exp_decay_function(self, np.ndarray[DTYPE_float_t, ndim=1] X):
+        cdef int i
+        cdef np.ndarray[DTYPE_float_t, ndim=1] ret = np.zeros_like(X)
+
+        for i in range(len(X)):
+            try:
+                ret[i] = 2. / ( 1. + np.exp(self.gamma * X[i]) )
+
+            except FloatingPointError:
+                ret[i] = 10**(-323)
+
+        return ret
 
     def class_weight(self, label, class_label=[1,-1]):
         numPos = float(len(label[label[:]==class_label[0]]))
@@ -189,19 +200,26 @@ class FSVMCIL():
 
         return (X, label, distance)
 
-    def fit(self, sample, label, C=1., class_label=[1,-1]):
+    def fit(self, sample, label, C=1., class_label=[1,-1], gram=None, weight=None):
         # equip weight of each class
         cPos, cNeg = self.class_weight(label, class_label)
 
-        # calc. dist
-        sample, label, dist = self.distance_function(sample, label, C=C, class_label=class_label)
+        if gram is not None and weight is not None:
+            self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
 
-        # apply decay function
-        weight = self.decay_function(dist)
+            self.clf.fit(gram, label, sample_weight=weight)
 
-        # ready and fit SVM to given sample
-        self.clf = svm.SVC(kernel='rbf', gamma=self.beta, C=C, class_weight={label[0]:cPos, label[1]:cNeg})
-        self.clf.fit(sample, label, sample_weight=weight)
+        else:
+            # calc. dist
+            sample, label, dist = self.distance_function(sample, label, C=C, class_label=class_label)
+
+            # apply decay function
+            weight = self.decay_function(dist)
+
+            # ready and fit SVM to given sample
+            self.clf = svm.SVC(kernel='rbf', gamma=self.beta, C=C, class_weight={label[0]:cPos, label[1]:cNeg})
+
+            self.clf.fit(sample, label, sample_weight=weight)
 
     def predict(self, target):
         return self.clf.predict(target)
