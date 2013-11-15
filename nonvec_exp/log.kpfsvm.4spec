@@ -1,26 +1,26 @@
 [0/5]: train samples (pos:598, neg:3862)
 [0/5]: test samples (pos:149, neg:965)
-[rough search] opt_C:10000000.0,	g:0.520530
-[narrow search] opt_C:56234132.519,	g:0.546824
-[optimized] acc:0.673250,	accP:0.590604,	accN:0.686010,	g:0.636522
+[rough search] opt_C:10.0,	g:0.934687
+[narrow search] opt_C:17.7827941004,	g:0.936473
+[optimized] acc:0.922801,	accP:0.926174,	accN:0.922280,	g:0.924225
 [1/5]: train samples (pos:598, neg:3862)
 [1/5]: test samples (pos:149, neg:965)
-[rough search] opt_C:10000.0,	g:0.564689
-[narrow search] opt_C:1778.27941004,	g:0.542531
-[optimized] acc:0.616697,	accP:0.456376,	accN:0.641451,	g:0.541057
+[rough search] opt_C:10.0,	g:0.930698
+[narrow search] opt_C:31.6227766017,	g:0.933743
+[optimized] acc:0.914722,	accP:0.953020,	accN:0.908808,	g:0.930652
 [2/5]: train samples (pos:598, neg:3862)
 [2/5]: test samples (pos:149, neg:965)
-[rough search] opt_C:100000000.0,	g:0.521695
-[narrow search] opt_C:31622776.6017,	g:0.509938
-[optimized] acc:0.668761,	accP:0.288591,	accN:0.727461,	g:0.458190
+[rough search] opt_C:10.0,	g:0.936482
+[narrow search] opt_C:17.7827941004,	g:0.937143
+[optimized] acc:0.955117,	accP:0.899329,	accN:0.963731,	g:0.930973
 [3/5]: train samples (pos:598, neg:3862)
 [3/5]: test samples (pos:149, neg:965)
-[rough search] opt_C:1000.0,	g:0.513360
-[narrow search] opt_C:5623.4132519,	g:0.431406
-[optimized] acc:0.704668,	accP:0.536913,	accN:0.730570,	g:0.626301
+[rough search] opt_C:10.0,	g:0.938472
+[narrow search] opt_C:10.0,	g:0.938472
+[optimized] acc:0.938959,	accP:0.906040,	accN:0.944041,	g:0.924846
 [4/5]: train samples (pos:596, neg:3860)
 [4/5]: test samples (pos:151, neg:967)
-[rough search] opt_C:1000.0,	g:0.490264
-[narrow search] opt_C:562.34132519,	g:0.518415
-[optimized] acc:0.652057,	accP:0.642384,	accN:0.653568,	g:0.647952
-[4-spec] acc:0.663086,	accP:0.502973,	accN:0.687812,	g:0.582004,	g_from_ave.:0.588176
+[rough search] opt_C:10.0,	g:0.932770
+[narrow search] opt_C:17.7827941004,	g:0.933591
+[optimized] acc:0.928444,	accP:0.953642,	accN:0.924509,	g:0.938963
+[4-spec] acc:0.932008,	accP:0.927641,	accN:0.932674,	g:0.929932,	g_from_ave.:0.930154
