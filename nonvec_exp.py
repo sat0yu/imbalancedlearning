@@ -95,7 +95,7 @@ def procedure(stringdata, datalabel, p, nCV=5):
         print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
 
         # ready parametersearch
-        pool = multiprocessing.Pool(1)
+        pool = multiprocessing.Pool(2)
         opt_C = 0.
 
         # rough parameter search
@@ -162,4 +162,4 @@ if __name__ == '__main__':
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 3, nCV=5)
+    procedure(X, label, 4, nCV=5)
