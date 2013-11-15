@@ -63,17 +63,17 @@ def multiproc(args):
     rough_C, p, Y, answer, X, label = args
 
     sk = NormalizedSpectrumKernel(p)
-    #clf = KernelProbabilityFuzzySVM(sk)
-    clf = DifferentErrorCosts(sk)
-    #gram, weight = precompute(sk, X, label)
-    gram = sk.gram(X)
+    clf = KernelProbabilityFuzzySVM(sk)
+    #clf = DifferentErrorCosts(sk)
+    gram, weight = precompute(sk, X, label)
+    #gram = sk.gram(X)
     mat = sk.matrix(Y,X)
 
     res = []
     for _C in rough_C:
         #clf = svm.SVC(kernel='precomputed', C=_C)
-        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        clf.fit(X, label, C=_C, gram=gram)
+        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #clf.fit(X, label, C=_C, gram=gram)
         #clf.fit(gram, label)
         predict = clf.predict(mat, precomputed=True)
         #predict = clf.predict(mat)
@@ -136,15 +136,15 @@ def procedure(stringdata, datalabel, p, nCV=5):
 
         # classify using searched params
         sk = NormalizedSpectrumKernel(p)
-        #clf = KernelProbabilityFuzzySVM(sk)
-        clf = DifferentErrorCosts(sk)
+        clf = KernelProbabilityFuzzySVM(sk)
+        #clf = DifferentErrorCosts(sk)
         #clf = svm.SVC(kernel='precomputed', C=opt_C)
 
-        #gram, weight = precompute(sk, X, label)
-        gram = sk.gram(X)
+        gram, weight = precompute(sk, X, label)
+        #gram = sk.gram(X)
         mat = sk.matrix(Y,X)
-        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        clf.fit(X, label, C=opt_C, gram=gram)
+        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        #clf.fit(X, label, C=opt_C, gram=gram)
         #clf.fit(gram, label)
         predict = clf.predict(mat, precomputed=True)
         #predict = clf.predict(mat)
@@ -158,7 +158,7 @@ def procedure(stringdata, datalabel, p, nCV=5):
     print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S1024')})
+    spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
     label = spam.raw['0']
     X = spam.raw['1']
 
