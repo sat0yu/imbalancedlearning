@@ -63,20 +63,20 @@ def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
     edk = EditDistanceKernel(beta)
-    #clf = KernelProbabilityFuzzySVM(edk)
+    clf = KernelProbabilityFuzzySVM(edk)
     #clf = DifferentErrorCosts(edk)
-    #gram, weight = precompute(edk, X, label)
-    gram = edk.gram(X)
+    gram, weight = precompute(edk, X, label)
+    #gram = edk.gram(X)
     mat = edk.matrix(Y,X)
 
     res = []
     for _C in rough_C:
-        clf = svm.SVC(kernel='precomputed', C=_C)
-        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #clf = svm.SVC(kernel='precomputed', C=_C)
+        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
         #clf.fit(X, label, C=_C, gram=gram)
-        clf.fit(gram, label)
-        #predict = clf.predict(mat, precomputed=True)
-        predict = clf.predict(mat)
+        #clf.fit(gram, label)
+        predict = clf.predict(mat, precomputed=True)
+        #predict = clf.predict(mat)
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -96,7 +96,7 @@ def procedure(stringdata, datalabel, nCV=5):
         print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
 
         # ready parametersearch
-        pool = multiprocessing.Pool(nCV)
+        pool = multiprocessing.Pool(2)
         opt_beta, opt_C = 0., 0.
 
         # rough parameter search
@@ -134,18 +134,18 @@ def procedure(stringdata, datalabel, nCV=5):
 
         # classify using searched params
         edk = EditDistanceKernel(opt_beta)
-        #clf = KernelProbabilityFuzzySVM(edk)
+        clf = KernelProbabilityFuzzySVM(edk)
         #clf = DifferentErrorCosts(edk)
-        clf = svm.SVC(kernel='precomputed', C=opt_C)
+        #clf = svm.SVC(kernel='precomputed', C=opt_C)
 
-        #gram, weight = precompute(edk, X, label)
-        gram = edk.gram(X)
+        gram, weight = precompute(edk, X, label)
+        #gram = edk.gram(X)
         mat = edk.matrix(Y,X)
-        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
         #clf.fit(X, label, C=opt_C, gram=gram)
-        clf.fit(gram, label)
-        #predict = clf.predict(mat, precomputed=True)
-        predict = clf.predict(mat)
+        #clf.fit(gram, label)
+        predict = clf.predict(mat, precomputed=True)
+        #predict = clf.predict(mat)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
