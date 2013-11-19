@@ -2,6 +2,7 @@
 import numpy as np
 cimport numpy as np
 import sys
+import Levenshtein
 
 DTYPE_int = np.int
 DTYPE_float = np.float
@@ -105,3 +106,12 @@ cdef class NormalizedSpectrumKernel(FloatStringKernel):
         if len(s) < self.p or len(t) < self.p: return 0.
 
         return self.sub_val(s,t) / np.sqrt( self.sub_val(s,s) * self.sub_val(t,t) )
+
+cdef class EditDistanceKernel(FloatStringKernel):
+    cdef double beta
+
+    def __init__(self, double beta):
+        self.beta = beta
+
+    cpdef double val(self, s, t):
+        return np.exp(-self.beta*Levenshtein.distance(s,t))
