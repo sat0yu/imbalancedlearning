@@ -32,11 +32,13 @@ def multiproc(args):
 
     return res
 
-def procedure(dataname, dataset, nCV=5, **kwargs):
+def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
+
+    dataset = createImbalanceClassDataset(dataset, ratio)
 
     # cross varidation
     scores = []
@@ -105,33 +107,33 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     _g = np.sqrt(accP * accN)
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
+def createTwoClassDataset(variances, means_distance, N, ratio, seed=0):
+    for v in variances:
+        if v.shape[0] is not v.shape[1]:
+            raise ValueError("Variance-covariance matrix must have the shape like square matrix")
+
+    r = np.sqrt(means_distance)
+    d = variances[0].shape[0]
+    np.random.seed(seed)
+
+    posMean = np.r_[r, [0]*(d-1)]
+    negMean = np.r_[-r, [0]*(d-1)]
+
+    posDist = NormalDistribution(posMean, variances[0])
+    negDist = NormalDistribution(negMean, variances[1])
+    imbdata = ImbalancedData(posDist, negDist, ratio)
+    dataset = imbdata.getSample(N)
+
+    return dataset
+
 if __name__ == '__main__':
-    #posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
-    #negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    #id = ImbalancedData(posDist, negDist, 50.)
-    #dataset = id.getSample(5000)
-    #procedure('gaussian mix.', dataset, nCV=4, label_index=0)
+    seed = 0
+    ratio = [1,2,5,10,20,50,100]
+    raw_ratio = 100
+    N = 5000
+    dim = 5
+    var = np.sqrt(dim)
+    dataset = createTwoClassDataset([(var**2)*np.identity(dim)]*2, 2*var, N, raw_ratio, seed=0)
 
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    procedure('ecoli', ecoli.raw, label_index=-1)
-
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    procedure('transfusion', transfusion.raw, label_index=-1)
-
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('haberman', haberman.raw, label_index=-1)
-
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('pima', pima.raw, label_index=-1)
-
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    procedure('yeast', yeast.raw, label_index=-1)
-
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    procedure('page-block', page.raw, label_index=-1)
-
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    procedure('abalone', abalone.raw, label_index=-1)
-
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('waveform', waveform.raw, label_index=-1)
+    for r in ratio:
+        procedure("dim:%d, var:%.3f, ratio:%d" % (dim,var,r), dataset, r, nCV=5, label_index=0)
