@@ -12,6 +12,27 @@ from kernel import *
 from mlutil import *
 from cil import *
 
+def dist_from_center(X, label, class_label=[1,-1]):
+    def dist(_X):
+        # calc. center
+        center = np.average(_X, axis=0)
+        # calc. distance between from center for each sample
+        return np.sum(np.abs(_X - center)**2, axis=-1)**(1/2.)
+
+    # sort given sample with their label
+    dataset = np.c_[label, X]
+    dataset = dataset[dataset[:,0].argsort()]
+    label, X = dataset[:,0], dataset[:,1:]
+
+    # separate given samples according to theirs label
+    numNeg = len(label[label[:]==class_label[1]])
+    negData, posData  = X[:int(numNeg)], X[int(numNeg):]
+
+    # concatenate arrays
+    distance = np.r_[dist(negData), dist(posData)]
+
+    return (X, label, distance)
+
 def dist_from_estimated_hyperplane(X, label, beta, Y):
     # sort given sample with their label
     dataset = np.c_[label, X]
@@ -41,6 +62,10 @@ def dist_from_hyperplane(X, label, beta, C=1.):
 def multiproc(args):
     rough_C, gamma_list, beta, Y, answer, X, label = args
 
+    #dist_from_center() rearrange the order of samples.
+    #so we have to use gram matrix caluclated after rearrangement
+    X, label, distance = dist_from_center(X, label)
+
     kernel = GaussKernel(beta)
     gram = kernel.gram(X)
     mat = kernel.matrix(Y,X)
@@ -54,12 +79,12 @@ def multiproc(args):
 
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
-        distance = dist_from_hyperplane(X, label, beta, _C)
+        #distance = dist_from_hyperplane(X, label, beta, _C)
 
         for _g in gamma_list:
-            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
+            clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
             #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
-            clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
+            #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
             weight = clf.exp_decay_function(distance)
             clf.fit(X, label, C=_C, gram=gram, weight=weight)
@@ -126,9 +151,9 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
+        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
-        clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
+        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
