@@ -15,19 +15,38 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
-    #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-    clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-    #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
-    #clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
-    #clf = DifferentErrorCosts( GaussKernel(beta) )
+    ## <Differenterrorcosts>
+    #gk = GaussKernel(beta)
+    #clf = DifferentErrorCosts(gk)
+    #gram = gk.gram(X)
+    #mat = gk.matrix(Y,X)
+    ## </Differenterrorcosts>
+
+    ## <Kernelprobabilityfuzzysvm>
+    #gk = GaussKernel(beta)
+    #clf = KernelProbabilityFuzzySVM(gk)
     #X, gram, label, weight = clf.precompute(X, label)
-    #gram = clf.precompute(X)
+    #mat = gk.matrix(Y,X)
+    ## </Kernelprobabilityfuzzysvm>
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C)
-        #clf.fit(X, label, C=_C, gram=gram)
+        ## <SVM>
+        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        clf.fit(X, label)
         predict = clf.predict(Y)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        #clf.fit(X, label, C=_C, gram=gram)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Kernelprobabilityfuzzysvm>
+
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -71,7 +90,6 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # narrow parameter search
-        max_g = -999.
         narrow_C = [opt_C*(10**j) for j in narrow_space]
         for beta in [opt_beta*(10**i) for i in narrow_space]:
             args = [ (narrow_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
@@ -90,13 +108,22 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
-        clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
-        #gk = GaussKernel(opt_beta)
-        #clf = DifferentErrorCosts(gk)
-        #clf = KernelProbabilityFuzzySVM(gk)
-        clf.fit(X, label, C=opt_C)
+
+        ## <SVM>
+        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        clf.fit(X, label)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        #clf = DifferentErrorCosts( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
+        ## </Kernelprobabilityfuzzysvm>
+
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
@@ -107,29 +134,10 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
     _g = np.sqrt(accP * accN)
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
-def createTwoClassDataset(variances, means_distance, N, ratio, seed=0):
-    for v in variances:
-        if v.shape[0] is not v.shape[1]:
-            raise ValueError("Variance-covariance matrix must have the shape like square matrix")
-
-    r = np.sqrt(means_distance)
-    d = variances[0].shape[0]
-    np.random.seed(seed)
-
-    posMean = np.r_[r, [0]*(d-1)]
-    negMean = np.r_[-r, [0]*(d-1)]
-
-    posDist = NormalDistribution(posMean, variances[0])
-    negDist = NormalDistribution(negMean, variances[1])
-    imbdata = ImbalancedData(posDist, negDist, ratio)
-    dataset = imbdata.getSample(N)
-
-    return dataset
-
 if __name__ == '__main__':
     seed = 0
     ratio = [1,2,5,10,20,50,100]
-    raw_ratio = 100
+    raw_ratio = max(ratio)
     N = 5000
     dim = 5
     var = np.sqrt(dim)
