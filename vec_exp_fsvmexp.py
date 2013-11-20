@@ -12,18 +12,59 @@ from kernel import *
 from mlutil import *
 from cil import *
 
+def dist_from_estimated_hyperplane(X, label, beta, Y):
+    # sort given sample with their label
+    dataset = np.c_[label, X]
+    dataset = dataset[dataset[:,0].argsort()]
+    label, X = dataset[:,0], dataset[:,1:]
+
+    # calc. gram matrix and then sample_weight
+    kernel = GaussKernel(beta)
+    gram = kernel.gram(X)
+    distance= np.dot(np.diag(label), np.dot(gram, label))
+
+    mat = kernel.matrix(Y,X)
+
+    return (X, label, gram, mat, distance)
+
+def dist_from_hyperplane(X, label, beta, C=1.):
+    # train conventional SVM
+    clf = svm.SVC(kernel='rbf', gamma=beta, C=C)
+    clf.fit(X, label)
+
+    # calc. distance between from hyperplane
+    value = (clf.decision_function(X))[:,0]
+    distance = np.abs(value)
+
+    return distance
+
 def multiproc(args):
     rough_C, gamma_list, beta, Y, answer, X, label = args
 
+    kernel = GaussKernel(beta)
+    gram = kernel.gram(X)
+    mat = kernel.matrix(Y,X)
+
+    #dist_from_estimated_hyperplane() rearrange the order of samples.
+    #so we have to use gram matrix returned by that method at clf.fit()
+    #X, label, gram, mat, distance = dist_from_estimated_hyperplane(X, label, beta, Y)
+
     res = []
     for _C in rough_C:
-        for _g in gamma_list:
-            clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
-            #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
-            #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
-            clf.fit(X, label, C=_C)
-            predict = clf.predict(Y)
+        #dist_from_hyperplane() doesn't rearange the order of samples,
+        #so we can use gram matrix calculated above at clf.fit().
+        distance = dist_from_hyperplane(X, label, beta, _C)
+
+        for _g in gamma_list:
+            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
+            #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
+            clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
+
+            weight = clf.exp_decay_function(distance)
+            clf.fit(X, label, C=_C, gram=gram, weight=weight)
+
+            predict = clf.predict(mat)
             res.append( (_C,_g)+evaluation(predict, answer) )
 
     return res
@@ -85,9 +126,9 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
+        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
-        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
+        clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
@@ -100,32 +141,32 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
-    negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    id = ImbalancedData(posDist, negDist, 5.)
-    dataset = id.getSample(500)
-    procedure('gaussian mix.', dataset, nCV=4, label_index=0)
+    #posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
+    #negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
+    #id = ImbalancedData(posDist, negDist, 5.)
+    #dataset = id.getSample(500)
+    #procedure('gaussian mix.', dataset, nCV=4, label_index=0)
 
-    #ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    #procedure('ecoli', ecoli.raw, label_index=-1)
+    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
+    procedure('ecoli', ecoli.raw, label_index=-1)
 
-    #transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    #procedure('transfusion', transfusion.raw, label_index=-1)
+    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+    procedure('transfusion', transfusion.raw, label_index=-1)
 
-    #haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    #procedure('haberman', haberman.raw, label_index=-1)
+    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    procedure('haberman', haberman.raw, label_index=-1)
 
-    #pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    #procedure('pima', pima.raw, label_index=-1)
+    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    procedure('pima', pima.raw, label_index=-1)
 
-    #yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    #procedure('yeast', yeast.raw, label_index=-1)
+    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+    procedure('yeast', yeast.raw, label_index=-1)
 
-    #page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    #procedure('page-block', page.raw, label_index=-1)
+    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+    procedure('page-block', page.raw, label_index=-1)
 
-    #abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    #procedure('abalone', abalone.raw, label_index=-1)
+    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+    procedure('abalone', abalone.raw, label_index=-1)
 
-    #waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    #procedure('waveform', waveform.raw, label_index=-1)
+    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    procedure('waveform', waveform.raw, label_index=-1)
