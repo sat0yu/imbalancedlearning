@@ -23,18 +23,18 @@ def multiproc(args):
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
-    #gk = GaussKernel(beta)
-    #clf = KernelProbabilityFuzzySVM(gk)
-    #X, gram, label, weight = clf.precompute(X, label)
-    #mat = gk.matrix(Y,X)
+    gk = GaussKernel(beta)
+    clf = KernelProbabilityFuzzySVM(gk)
+    X, gram, label, weight = clf.precompute(X, label)
+    mat = gk.matrix(Y,X)
     ## </Kernelprobabilityfuzzysvm>
 
     res = []
     for _C in rough_C:
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        clf.fit(X, label)
-        predict = clf.predict(Y)
+        #clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        #clf.fit(X, label)
+        #predict = clf.predict(Y)
         ## </SVM>
 
         ## <Differenterrorcosts>
@@ -43,8 +43,8 @@ def multiproc(args):
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #predict = clf.predict(mat, precomputed=True)
+        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>
 
         res.append( (_C,)+evaluation(predict, answer) )
@@ -110,8 +110,8 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
         # classify using searched params
 
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
-        clf.fit(X, label)
+        #clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        #clf.fit(X, label)
         ## </SVM>
 
         ## <Differenterrorcosts>
@@ -120,8 +120,8 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
-        #clf.fit(X, label, C=opt_C)
+        clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
+        clf.fit(X, label, C=opt_C)
         ## </Kernelprobabilityfuzzysvm>
 
         predict = clf.predict(Y)
