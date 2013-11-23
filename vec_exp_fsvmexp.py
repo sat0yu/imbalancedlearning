@@ -64,22 +64,33 @@ def multiproc(args):
 
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
+    #<FSVMCIL.CENTER>
     X, label, distance = dist_from_center(X, label)
-
     kernel = GaussKernel(beta)
     gram = kernel.gram(X)
     mat = kernel.matrix(Y,X)
+    #</FSVMCIL.CENTER>
+
+    #<FSVMCIL.HYPERPLANE>
+    #kernel = GaussKernel(beta)
+    #gram = kernel.gram(X)
+    #mat = kernel.matrix(Y,X)
+    #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
     #so we have to use gram matrix returned by that method at clf.fit()
+    #<FSVMCIL.ESTIMATE>
     #X, label, gram, mat, distance = dist_from_estimated_hyperplane(X, label, beta, Y)
+    #</FSVMCIL.ESTIMATE>
 
     res = []
     for _C in rough_C:
 
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
+        #<FSVMCIL.HYPERPLANE>
         #distance = dist_from_hyperplane(X, label, beta, _C)
+        #</FSVMCIL.HYPERPLANE>
 
         for _g in gamma_list:
             clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
