@@ -9,6 +9,43 @@ DTYPE_float = np.float
 ctypedef np.int_t DTYPE_int_t
 ctypedef np.float_t DTYPE_float_t
 
+def createTwoClassDataset(variances, means_distance, N, ratio, seed=0):
+    for v in variances:
+        if v.shape[0] is not v.shape[1]:
+            raise ValueError("Variance-covariance matrix must have the shape like square matrix")
+
+    r = np.sqrt(means_distance)
+    d = variances[0].shape[0]
+    np.random.seed(seed)
+
+    posMean = np.r_[r, [0]*(d-1)]
+    negMean = np.r_[-r, [0]*(d-1)]
+
+    posDist = NormalDistribution(posMean, variances[0])
+    negDist = NormalDistribution(negMean, variances[1])
+    imbdata = ImbalancedData(posDist, negDist, ratio)
+    dataset = imbdata.getSample(N)
+
+    return dataset
+
+def createImbalanceClassDataset(dataset, ratio=1., label_index=0, label=[1,-1]):
+    pDataset = dataset[dataset[:,label_index]==label[0]]
+    nDataset = dataset[dataset[:,label_index]==label[1]]
+    pN, nN = pDataset.shape[0], nDataset.shape[0]
+
+    if pN > nN:
+        _pN = np.round(nN * ratio)
+        if _pN > pN:
+            print "nN * ratio = %d, but positive data has only %d samples" % (_pN, pN)
+        pN = _pN
+    else:
+        _nN = np.round(pN * ratio)
+        if _nN > nN:
+            print "pN * ratio = %d, but negative data has only %d samples" % (_nN, nN)
+        nN = _nN
+
+    return np.r_[nDataset[:nN], pDataset[:pN]]
+
 def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
     pDataset = dataset[dataset[:,label_index]==label[0]]
     pw = len(pDataset) / nCV

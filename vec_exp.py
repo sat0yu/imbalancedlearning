@@ -15,28 +15,49 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
-    #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-    clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-    #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
-    #clf = KernelProbabilityFuzzySVM( GaussKernel(beta) )
-    #clf = DifferentErrorCosts( GaussKernel(beta) )
+    ## <Differenterrorcosts>
+    gk = GaussKernel(beta)
+    clf = DifferentErrorCosts(gk)
+    gram = gk.gram(X)
+    mat = gk.matrix(Y,X)
+    ## </Differenterrorcosts>
+
+    ## <Kernelprobabilityfuzzysvm>
+    #gk = GaussKernel(beta)
+    #clf = KernelProbabilityFuzzySVM(gk)
     #X, gram, label, weight = clf.precompute(X, label)
-    #gram = clf.precompute(X)
+    #mat = gk.matrix(Y,X)
+    ## </Kernelprobabilityfuzzysvm>
 
     res = []
     for _C in rough_C:
-        clf.fit(X, label, C=_C)
-        #clf.fit(X, label, C=_C, gram=gram)
-        predict = clf.predict(Y)
+        ## <SVM>
+        #clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        #clf.fit(X, label)
+        #predict = clf.predict(Y)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        clf.fit(X, label, C=_C, gram=gram)
+        predict = clf.predict(mat, precomputed=True)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Kernelprobabilityfuzzysvm>
+
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
 
-def procedure(dataname, dataset, nCV=5, **kwargs):
+def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
+
+    dataset = createImbalanceClassDataset(dataset, ratio)
 
     # cross varidation
     scores = []
@@ -69,7 +90,6 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # narrow parameter search
-        max_g = -999.
         narrow_C = [opt_C*(10**j) for j in narrow_space]
         for beta in [opt_beta*(10**i) for i in narrow_space]:
             args = [ (narrow_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
@@ -88,13 +108,22 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
-        clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
-        #gk = GaussKernel(opt_beta)
-        #clf = DifferentErrorCosts(gk)
-        #clf = KernelProbabilityFuzzySVM(gk)
+
+        ## <SVM>
+        #clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        #clf.fit(X, label)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        clf = DifferentErrorCosts( GaussKernel(opt_beta) )
         clf.fit(X, label, C=opt_C)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
+        ## </Kernelprobabilityfuzzysvm>
+
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
@@ -106,32 +135,13 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    #posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
-    #negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    #id = ImbalancedData(posDist, negDist, 50.)
-    #dataset = id.getSample(5000)
-    #procedure('gaussian mix.', dataset, nCV=4, label_index=0)
+    seed = 0
+    ratio = [1,2,5,10,20,50,100]
+    raw_ratio = max(ratio)
+    N = 5000
+    dim = 5
+    var = np.sqrt(dim)
+    dataset = createTwoClassDataset([(var**2)*np.identity(dim)]*2, 2*var, N, raw_ratio, seed=0)
 
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    procedure('ecoli', ecoli.raw, label_index=-1)
-
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    procedure('transfusion', transfusion.raw, label_index=-1)
-
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('haberman', haberman.raw, label_index=-1)
-
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('pima', pima.raw, label_index=-1)
-
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    procedure('yeast', yeast.raw, label_index=-1)
-
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    procedure('page-block', page.raw, label_index=-1)
-
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    procedure('abalone', abalone.raw, label_index=-1)
-
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('waveform', waveform.raw, label_index=-1)
+    for r in ratio:
+        procedure("dim:%d, var:%.3f, ratio:%d" % (dim,var,r), dataset, r, nCV=5, label_index=0)
