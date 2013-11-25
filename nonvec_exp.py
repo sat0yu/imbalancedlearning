@@ -104,7 +104,7 @@ def multiproc(args):
 
     return res
 
-def procedure(stringdata, datalabel, p, nCV=5):
+def procedure(dataname, stringdata, datalabel, p, nCV=5):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
@@ -113,9 +113,9 @@ def procedure(stringdata, datalabel, p, nCV=5):
     scores = []
     for i_CV, (Y,answer,X,label) in enumerate( dataset_iterator(stringdata, datalabel, nCV) ):
         pos, neg = len(label[label[:]==1]),len(label[label[:]==-1])
-        print "[%d/%d]: train samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
+        print "%s[%d/%d]: train samples (pos:%d, neg:%d)" % (dataname, i_CV, nCV, pos, neg)
         pos, neg = len(answer[answer[:]==1]),len(answer[answer[:]==-1])
-        print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
+        print "%s[%d/%d]: test samples (pos:%d, neg:%d)" % (dataname, i_CV, nCV, pos, neg)
 
         # ready parametersearch
         pool = multiprocessing.Pool(2)
@@ -192,11 +192,41 @@ def procedure(stringdata, datalabel, p, nCV=5):
     # average evaluation score
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
     _g = np.sqrt(accP * accN)
-    print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
+    print "%s[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,p,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
     spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 5, nCV=5)
+    seed = 0
+    p = 2
+    ratio = [1,2,5,10,20,50,100]
+    max_ratio = max(ratio)
+    class_label = [1,-1]
+
+    pData = X[label[:]==class_label[0]]
+    nData = X[label[:]==class_label[1]]
+    pN, nN = len(pData), len(nData)
+
+    if pN > nN:
+        major, minor = pData, nData
+        maj_N, min_N = pN, nN
+        maj_label, min_label = class_label[0], class_label[1]
+    else:
+        major, minor = nData, pData
+        maj_N, min_N = nN, pN
+        maj_label, min_label = class_label[1], class_label[0]
+
+    np.random.seed(seed)
+    np.random.shuffle(minor)
+    np.random.shuffle(major)
+
+    N = np.round(maj_N / max_ratio)
+    minor = minor[:N]
+
+    for r in ratio:
+        M = N*r
+        X = np.r_[major[:M], minor]
+        label = np.r_[[maj_label]*M, [min_label]*N]
+        procedure("ratio:%d" % r, X, label, p, nCV=5)
