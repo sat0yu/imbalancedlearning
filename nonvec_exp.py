@@ -43,13 +43,14 @@ def dataset_iterator(data, label, nCV, label_value=[1,-1]):
 
         yield (X, label, Y, answer)
 
-def precompute(kernel, sample, label, class_label=[1,-1]):
+def precompute(kernel, sample, label, target, class_label=[1,-1]):
     # count sample belong to each class
     numPos = len(label[label[:]==class_label[0]])
     numNeg = len(label[label[:]==class_label[1]])
 
     # calc. gram matrix and then sample_weight
     gram = kernel.gram(sample)
+    mat = kernel.matrix(target, sample)
     # NOW, WE PUT THE ASSUMPTION THAT POSITIVE(NEGATIVE) LABEL IS 1(-1)
     # AND GRAM MATRIX IS CREATED FROM THE DATA IN WHICH NEGATIVE DATA IS PLACED BEFORE POSITIVES
     nFront, nBack = numNeg, numPos
@@ -57,26 +58,48 @@ def precompute(kernel, sample, label, class_label=[1,-1]):
     wBack = np.sum(gram[nFront:,nFront:], axis=0)
     weight = np.r_[wFront / nFront, wBack / nBack]
 
-    return (gram, weight)
+    return (gram, mat, weight)
 
 def multiproc(args):
     rough_C, p, Y, answer, X, label = args
 
+    ## <SVM>
     sk = NormalizedSpectrumKernel(p)
-    clf = KernelProbabilityFuzzySVM(sk)
-    #clf = DifferentErrorCosts(sk)
-    gram, weight = precompute(sk, X, label)
-    #gram = sk.gram(X)
+    gram = sk.gram(X)
     mat = sk.matrix(Y,X)
+    ## </SVM>
+
+    ## <Differenterrorcosts>
+    #sk = NormalizedSpectrumKernel(p)
+    #clf = DifferentErrorCosts(sk)
+    #gram = sk.gram(X)
+    #mat = sk.matrix(Y,X)
+    ## </Differenterrorcosts>
+
+    ## <Kernelprobabilityfuzzysvm>
+    #sk = NormalizedSpectrumKernel(p)
+    #clf = KernelProbabilityFuzzySVM(sk)
+    #gram, mat, weight = precompute(sk, X, label, Y)
+    ## </Kernelprobabilityfuzzysvm>
 
     res = []
     for _C in rough_C:
-        #clf = svm.SVC(kernel='precomputed', C=_C)
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        ## <SVM>
+        clf = svm.SVC(kernel='precomputed', C=_C)
+        clf.fit(gram, label)
+        predict = clf.predict(mat)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
         #clf.fit(X, label, C=_C, gram=gram)
-        #clf.fit(gram, label)
-        predict = clf.predict(mat, precomputed=True)
-        #predict = clf.predict(mat)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
+        ## <Kernelprobabilityfuzzysvm>
+
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -135,19 +158,33 @@ def procedure(stringdata, datalabel, p, nCV=5):
         sys.stdout.flush()
 
         # classify using searched params
-        sk = NormalizedSpectrumKernel(p)
-        clf = KernelProbabilityFuzzySVM(sk)
-        #clf = DifferentErrorCosts(sk)
-        #clf = svm.SVC(kernel='precomputed', C=opt_C)
 
-        gram, weight = precompute(sk, X, label)
-        #gram = sk.gram(X)
+        ## <SVM>
+        sk = NormalizedSpectrumKernel(p)
+        gram = sk.gram(X)
         mat = sk.matrix(Y,X)
-        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        clf = svm.SVC(kernel='precomputed', C=opt_C)
+        clf.fit(gram, label)
+        predict = clf.predict(mat)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        #sk = NormalizedSpectrumKernel(p)
+        #gram = sk.gram(X)
+        #mat = sk.matrix(Y,X)
+        #clf = DifferentErrorCosts(sk)
         #clf.fit(X, label, C=opt_C, gram=gram)
-        #clf.fit(gram, label)
-        predict = clf.predict(mat, precomputed=True)
-        #predict = clf.predict(mat)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #sk = NormalizedSpectrumKernel(p)
+        #gram, mat, weight = precompute(sk, X, label, Y)
+        #clf = KernelProbabilityFuzzySVM(sk)
+        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Kernelprobabilityfuzzysvm>
+
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
