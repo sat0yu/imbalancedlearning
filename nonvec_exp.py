@@ -70,16 +70,16 @@ def multiproc(args):
     ## </SVM>
 
     ## <Differenterrorcosts>
-    #sk = NormalizedSpectrumKernel(p)
-    #clf = DifferentErrorCosts(sk)
-    #gram = sk.gram(X)
-    #mat = sk.matrix(Y,X)
+    sk = NormalizedSpectrumKernel(p)
+    clf = DifferentErrorCosts(sk)
+    gram = sk.gram(X)
+    mat = sk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
-    sk = NormalizedSpectrumKernel(p)
-    clf = KernelProbabilityFuzzySVM(sk)
-    gram, mat, weight = precompute(sk, X, label, Y)
+    #sk = NormalizedSpectrumKernel(p)
+    #clf = KernelProbabilityFuzzySVM(sk)
+    #gram, mat, weight = precompute(sk, X, label, Y)
     ## </Kernelprobabilityfuzzysvm>
 
     res = []
@@ -91,13 +91,13 @@ def multiproc(args):
         ## </SVM>
 
         ## <Differenterrorcosts>
-        #clf.fit(X, label, C=_C, gram=gram)
-        #predict = clf.predict(mat, precomputed=True)
+        clf.fit(X, label, C=_C, gram=gram)
+        predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        predict = clf.predict(mat, precomputed=True)
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
         ## <Kernelprobabilityfuzzysvm>
 
         res.append( (_C,)+evaluation(predict, answer) )
@@ -169,20 +169,20 @@ def procedure(dataname, stringdata, datalabel, p, nCV=5):
         ## </SVM>
 
         ## <Differenterrorcosts>
-        #sk = NormalizedSpectrumKernel(p)
-        #gram = sk.gram(X)
-        #mat = sk.matrix(Y,X)
-        #clf = DifferentErrorCosts(sk)
-        #clf.fit(X, label, C=opt_C, gram=gram)
-        #predict = clf.predict(mat, precomputed=True)
+        sk = NormalizedSpectrumKernel(p)
+        gram = sk.gram(X)
+        mat = sk.matrix(Y,X)
+        clf = DifferentErrorCosts(sk)
+        clf.fit(X, label, C=opt_C, gram=gram)
+        predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        sk = NormalizedSpectrumKernel(p)
-        gram, mat, weight = precompute(sk, X, label, Y)
-        clf = KernelProbabilityFuzzySVM(sk)
-        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        predict = clf.predict(mat, precomputed=True)
+        #sk = NormalizedSpectrumKernel(p)
+        #gram, mat, weight = precompute(sk, X, label, Y)
+        #clf = KernelProbabilityFuzzySVM(sk)
+        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>
 
         e = evaluation(predict, answer)
