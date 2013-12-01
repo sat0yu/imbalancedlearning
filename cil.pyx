@@ -140,7 +140,7 @@ class FSVMCIL():
                 ret[i] = 2. / ( 1. + np.exp(self.gamma * X[i]) )
 
             except FloatingPointError:
-                ret[i] = 10**(-323)
+                ret[i] = np.float(10.)**(-320)
 
         return ret
 
