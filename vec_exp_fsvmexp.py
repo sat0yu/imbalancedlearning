@@ -65,10 +65,10 @@ def multiproc(args):
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
     #<FSVMCIL.CENTER>
-    X, label, distance = dist_from_center(X, label)
-    kernel = GaussKernel(beta)
-    gram = kernel.gram(X)
-    mat = kernel.matrix(Y,X)
+    #X, label, distance = dist_from_center(X, label)
+    #kernel = GaussKernel(beta)
+    #gram = kernel.gram(X)
+    #mat = kernel.matrix(Y,X)
     #</FSVMCIL.CENTER>
 
     #<FSVMCIL.HYPERPLANE>
@@ -80,7 +80,7 @@ def multiproc(args):
     #dist_from_estimated_hyperplane() rearrange the order of samples.
     #so we have to use gram matrix returned by that method at clf.fit()
     #<FSVMCIL.ESTIMATE>
-    #X, label, gram, mat, distance = dist_from_estimated_hyperplane(X, label, beta, Y)
+    X, label, gram, mat, distance = dist_from_estimated_hyperplane(X, label, beta, Y)
     #</FSVMCIL.ESTIMATE>
 
     res = []
@@ -93,8 +93,8 @@ def multiproc(args):
         #</FSVMCIL.HYPERPLANE>
 
         for _g in gamma_list:
-            clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
-            #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
+            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
+            clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
             #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
             weight = clf.exp_decay_function(distance)
@@ -162,8 +162,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
-        #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
+        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
+        clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
