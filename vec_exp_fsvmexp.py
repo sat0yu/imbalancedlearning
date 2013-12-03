@@ -65,16 +65,16 @@ def multiproc(args):
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
     #<FSVMCIL.CENTER>
-    #X, label, distance = dist_from_center(X, label)
-    #kernel = GaussKernel(beta)
-    #gram = kernel.gram(X)
-    #mat = kernel.matrix(Y,X)
-    #</FSVMCIL.CENTER>
-
-    #<FSVMCIL.HYPERPLANE>
+    X, label, distance = dist_from_center(X, label)
     kernel = GaussKernel(beta)
     gram = kernel.gram(X)
     mat = kernel.matrix(Y,X)
+    #</FSVMCIL.CENTER>
+
+    #<FSVMCIL.HYPERPLANE>
+    #kernel = GaussKernel(beta)
+    #gram = kernel.gram(X)
+    #mat = kernel.matrix(Y,X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
@@ -89,13 +89,13 @@ def multiproc(args):
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
-        distance = dist_from_hyperplane(X, label, beta, _C)
+        #distance = dist_from_hyperplane(X, label, beta, _C)
         #</FSVMCIL.HYPERPLANE>
 
         for _g in gamma_list:
-            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
+            clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
             #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
-            clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
+            #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
             weight = clf.exp_decay_function(distance)
             clf.fit(X, label, C=_C, gram=gram, weight=weight)
@@ -105,12 +105,14 @@ def multiproc(args):
 
     return res
 
-def procedure(dataname, dataset, nCV=5, **kwargs):
+def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
     gamma_list = np.linspace(0.1, 1.0, 10)
+
+    dataset = createImbalanceClassDataset(dataset, ratio)
 
     # cross varidation
     scores = []
@@ -162,9 +164,9 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         sys.stdout.flush()
 
         # classify using searched params
-        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
+        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
-        clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
+        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
@@ -177,32 +179,13 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    #posDist = NormalDistribution([-10, -10], [[50,0],[0,100]])
-    #negDist = NormalDistribution([10, 10], [[100,0],[0,50]])
-    #id = ImbalancedData(posDist, negDist, 5.)
-    #dataset = id.getSample(500)
-    #procedure('gaussian mix.', dataset, nCV=4, label_index=0)
+    seed = 0
+    ratio = [1,2,5,10,20,50,100]
+    raw_ratio = max(ratio)
+    N = 5000
+    dim = 5
+    var = np.sqrt(dim)
+    dataset = createTwoClassDataset([(var**2)*np.identity(dim)]*2, 2*var, N, raw_ratio, seed=0)
 
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    procedure('ecoli', ecoli.raw, label_index=-1)
-
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    procedure('transfusion', transfusion.raw, label_index=-1)
-
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('haberman', haberman.raw, label_index=-1)
-
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('pima', pima.raw, label_index=-1)
-
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    procedure('yeast', yeast.raw, label_index=-1)
-
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    procedure('page-block', page.raw, label_index=-1)
-
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    procedure('abalone', abalone.raw, label_index=-1)
-
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('waveform', waveform.raw, label_index=-1)
+    for r in ratio:
+        procedure("dim:%d, var:%.3f, ratio:%d" % (dim,var,r), dataset, r, nCV=5, label_index=0)

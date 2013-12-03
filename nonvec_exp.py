@@ -43,13 +43,14 @@ def dataset_iterator(data, label, nCV, label_value=[1,-1]):
 
         yield (X, label, Y, answer)
 
-def precompute(kernel, sample, label, class_label=[1,-1]):
+def precompute(kernel, sample, label, target, class_label=[1,-1]):
     # count sample belong to each class
     numPos = len(label[label[:]==class_label[0]])
     numNeg = len(label[label[:]==class_label[1]])
 
     # calc. gram matrix and then sample_weight
     gram = kernel.gram(sample)
+    mat = kernel.matrix(target, sample)
     # NOW, WE PUT THE ASSUMPTION THAT POSITIVE(NEGATIVE) LABEL IS 1(-1)
     # AND GRAM MATRIX IS CREATED FROM THE DATA IN WHICH NEGATIVE DATA IS PLACED BEFORE POSITIVES
     nFront, nBack = numNeg, numPos
@@ -57,31 +58,53 @@ def precompute(kernel, sample, label, class_label=[1,-1]):
     wBack = np.sum(gram[nFront:,nFront:], axis=0)
     weight = np.r_[wFront / nFront, wBack / nBack]
 
-    return (gram, weight)
+    return (gram, mat, weight)
 
 def multiproc(args):
     rough_C, p, Y, answer, X, label = args
 
-    sk = NormalizedSpectrumKernel(p)
-    clf = KernelProbabilityFuzzySVM(sk)
-    #clf = DifferentErrorCosts(sk)
-    gram, weight = precompute(sk, X, label)
+    ## <SVM>
+    #sk = NormalizedSpectrumKernel(p)
     #gram = sk.gram(X)
+    #mat = sk.matrix(Y,X)
+    ## </SVM>
+
+    ## <Differenterrorcosts>
+    sk = NormalizedSpectrumKernel(p)
+    clf = DifferentErrorCosts(sk)
+    gram = sk.gram(X)
     mat = sk.matrix(Y,X)
+    ## </Differenterrorcosts>
+
+    ## <Kernelprobabilityfuzzysvm>
+    #sk = NormalizedSpectrumKernel(p)
+    #clf = KernelProbabilityFuzzySVM(sk)
+    #gram, mat, weight = precompute(sk, X, label, Y)
+    ## </Kernelprobabilityfuzzysvm>
 
     res = []
     for _C in rough_C:
+        ## <SVM>
         #clf = svm.SVC(kernel='precomputed', C=_C)
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=_C, gram=gram)
         #clf.fit(gram, label)
-        predict = clf.predict(mat, precomputed=True)
         #predict = clf.predict(mat)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        clf.fit(X, label, C=_C, gram=gram)
+        predict = clf.predict(mat, precomputed=True)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
+        ## <Kernelprobabilityfuzzysvm>
+
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
 
-def procedure(stringdata, datalabel, p, nCV=5):
+def procedure(dataname, stringdata, datalabel, p, nCV=5):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
@@ -90,9 +113,9 @@ def procedure(stringdata, datalabel, p, nCV=5):
     scores = []
     for i_CV, (Y,answer,X,label) in enumerate( dataset_iterator(stringdata, datalabel, nCV) ):
         pos, neg = len(label[label[:]==1]),len(label[label[:]==-1])
-        print "[%d/%d]: train samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
+        print "%s[%d/%d]: train samples (pos:%d, neg:%d)" % (dataname, i_CV, nCV, pos, neg)
         pos, neg = len(answer[answer[:]==1]),len(answer[answer[:]==-1])
-        print "[%d/%d]: test samples (pos:%d, neg:%d)" % (i_CV, nCV, pos, neg)
+        print "%s[%d/%d]: test samples (pos:%d, neg:%d)" % (dataname, i_CV, nCV, pos, neg)
 
         # ready parametersearch
         pool = multiprocessing.Pool(2)
@@ -135,19 +158,33 @@ def procedure(stringdata, datalabel, p, nCV=5):
         sys.stdout.flush()
 
         # classify using searched params
-        sk = NormalizedSpectrumKernel(p)
-        clf = KernelProbabilityFuzzySVM(sk)
-        #clf = DifferentErrorCosts(sk)
-        #clf = svm.SVC(kernel='precomputed', C=opt_C)
 
-        gram, weight = precompute(sk, X, label)
+        ## <SVM>
+        #sk = NormalizedSpectrumKernel(p)
         #gram = sk.gram(X)
-        mat = sk.matrix(Y,X)
-        clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
-        #clf.fit(X, label, C=opt_C, gram=gram)
+        #mat = sk.matrix(Y,X)
+        #clf = svm.SVC(kernel='precomputed', C=opt_C)
         #clf.fit(gram, label)
-        predict = clf.predict(mat, precomputed=True)
         #predict = clf.predict(mat)
+        ## </SVM>
+
+        ## <Differenterrorcosts>
+        sk = NormalizedSpectrumKernel(p)
+        gram = sk.gram(X)
+        mat = sk.matrix(Y,X)
+        clf = DifferentErrorCosts(sk)
+        clf.fit(X, label, C=opt_C, gram=gram)
+        predict = clf.predict(mat, precomputed=True)
+        ## </Differenterrorcosts>
+
+        ## <Kernelprobabilityfuzzysvm>
+        #sk = NormalizedSpectrumKernel(p)
+        #gram, mat, weight = precompute(sk, X, label, Y)
+        #clf = KernelProbabilityFuzzySVM(sk)
+        #clf.fit(X, label, C=opt_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
+        ## </Kernelprobabilityfuzzysvm>
+
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
@@ -155,11 +192,41 @@ def procedure(stringdata, datalabel, p, nCV=5):
     # average evaluation score
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
     _g = np.sqrt(accP * accN)
-    print "[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (p,acc,accP,accN,g,_g)
+    print "%s[%d-spec] acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,p,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
     spam = Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})
     label = spam.raw['0']
     X = spam.raw['1']
 
-    procedure(X, label, 5, nCV=5)
+    seed = 0
+    p = 2
+    ratio = [1,2,5,10,20,50,100]
+    max_ratio = max(ratio)
+    class_label = [1,-1]
+
+    pData = X[label[:]==class_label[0]]
+    nData = X[label[:]==class_label[1]]
+    pN, nN = len(pData), len(nData)
+
+    if pN > nN:
+        major, minor = pData, nData
+        maj_N, min_N = pN, nN
+        maj_label, min_label = class_label[0], class_label[1]
+    else:
+        major, minor = nData, pData
+        maj_N, min_N = nN, pN
+        maj_label, min_label = class_label[1], class_label[0]
+
+    np.random.seed(seed)
+    np.random.shuffle(minor)
+    np.random.shuffle(major)
+
+    N = np.round(maj_N / max_ratio)
+    minor = minor[:N]
+
+    for r in ratio:
+        M = N*r
+        X = np.r_[major[:M], minor]
+        label = np.r_[[maj_label]*M, [min_label]*N]
+        procedure("ratio:%d" % r, X, label, p, nCV=5)
