@@ -1,0 +1,182 @@
+dim:5, var:2.236, ratio:1(0/5): train samples (pos:40, neg:40)
+dim:5, var:2.236, ratio:1(0/5): test samples (pos:9, neg:9)
+[rough search] opt_beta:0.1,	opt_C:1000.0,	opt_gamma:0.0,	g:0.825000
+[narrow search] opt_beta:0.1,	opt_C:562.34132519,	opt_gamma:0.0,	g:0.825000
+[optimized] acc:0.611111,	accP:0.333333,	accN:0.888889,	g:0.544331
+dim:5, var:2.236, ratio:1(1/5): train samples (pos:40, neg:40)
+dim:5, var:2.236, ratio:1(1/5): test samples (pos:9, neg:9)
+[rough search] opt_beta:0.01,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.800000
+[narrow search] opt_beta:0.0056234132519,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.800000
+[optimized] acc:0.666667,	accP:0.555556,	accN:0.777778,	g:0.657342
+dim:5, var:2.236, ratio:1(2/5): train samples (pos:40, neg:40)
+dim:5, var:2.236, ratio:1(2/5): test samples (pos:9, neg:9)
+[rough search] opt_beta:1e-09,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.773385
+[narrow search] opt_beta:3.16227766017e-09,	opt_C:31622776.6017,	opt_gamma:0.0,	g:0.774597
+[optimized] acc:0.888889,	accP:1.000000,	accN:0.777778,	g:0.881917
+dim:5, var:2.236, ratio:1(3/5): train samples (pos:40, neg:40)
+dim:5, var:2.236, ratio:1(3/5): test samples (pos:9, neg:9)
+[rough search] opt_beta:1e-06,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.774597
+[narrow search] opt_beta:3.16227766017e-07,	opt_C:3162277.66017,	opt_gamma:0.0,	g:0.774597
+[optimized] acc:0.888889,	accP:0.888889,	accN:0.888889,	g:0.888889
+dim:5, var:2.236, ratio:1(4/5): train samples (pos:36, neg:36)
+dim:5, var:2.236, ratio:1(4/5): test samples (pos:13, neg:13)
+[rough search] opt_beta:0.0001,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.860707
+[narrow search] opt_beta:5.6234132519e-05,	opt_C:1778279.41004,	opt_gamma:0.0,	g:0.860707
+[optimized] acc:0.653846,	accP:0.615385,	accN:0.692308,	g:0.652714
+[dim:5, var:2.236, ratio:1]: acc:0.741880,	accP:0.678632,	accN:0.805128,	g:0.725039,	g_from_ave.:0.739179
+dim:5, var:2.236, ratio:2(0/5): train samples (pos:40, neg:79)
+dim:5, var:2.236, ratio:2(0/5): test samples (pos:9, neg:19)
+[rough search] opt_beta:0.01,	opt_C:1000.0,	opt_gamma:0.0,	g:0.848311
+[narrow search] opt_beta:0.0177827941004,	opt_C:562.34132519,	opt_gamma:0.0,	g:0.866937
+[optimized] acc:0.750000,	accP:0.666667,	accN:0.789474,	g:0.725476
+dim:5, var:2.236, ratio:2(1/5): train samples (pos:40, neg:79)
+dim:5, var:2.236, ratio:2(1/5): test samples (pos:9, neg:19)
+[rough search] opt_beta:1e-07,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.828950
+[narrow search] opt_beta:1.77827941004e-08,	opt_C:316227766.017,	opt_gamma:0.0,	g:0.835359
+[optimized] acc:0.714286,	accP:0.444444,	accN:0.842105,	g:0.611775
+dim:5, var:2.236, ratio:2(2/5): train samples (pos:40, neg:79)
+dim:5, var:2.236, ratio:2(2/5): test samples (pos:9, neg:19)
+[rough search] opt_beta:1e-05,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.835758
+[narrow search] opt_beta:1e-05,	opt_C:562341325.19,	opt_gamma:0.0,	g:0.842511
+[optimized] acc:0.785714,	accP:0.888889,	accN:0.736842,	g:0.809303
+dim:5, var:2.236, ratio:2(3/5): train samples (pos:40, neg:79)
+dim:5, var:2.236, ratio:2(3/5): test samples (pos:9, neg:19)
+[rough search] opt_beta:1e-07,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.835758
+[narrow search] opt_beta:3.16227766017e-08,	opt_C:31622776.6017,	opt_gamma:0.0,	g:0.842511
+[optimized] acc:0.892857,	accP:0.888889,	accN:0.894737,	g:0.891808
+dim:5, var:2.236, ratio:2(4/5): train samples (pos:36, neg:76)
+dim:5, var:2.236, ratio:2(4/5): test samples (pos:13, neg:22)
+[rough search] opt_beta:1e-06,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.904394
+[narrow search] opt_beta:3.16227766017e-07,	opt_C:31622776.6017,	opt_gamma:0.0,	g:0.904394
+[optimized] acc:0.800000,	accP:0.615385,	accN:0.909091,	g:0.747958
+[dim:5, var:2.236, ratio:2]: acc:0.788571,	accP:0.700855,	accN:0.834450,	g:0.757264,	g_from_ave.:0.764741
+dim:5, var:2.236, ratio:5(0/5): train samples (pos:40, neg:196)
+dim:5, var:2.236, ratio:5(0/5): test samples (pos:9, neg:49)
+[rough search] opt_beta:1e-05,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.835637
+[narrow search] opt_beta:1.77827941004e-06,	opt_C:17782794.1004,	opt_gamma:0.0,	g:0.838227
+[optimized] acc:0.862069,	accP:0.666667,	accN:0.897959,	g:0.773718
+dim:5, var:2.236, ratio:5(1/5): train samples (pos:40, neg:196)
+dim:5, var:2.236, ratio:5(1/5): test samples (pos:9, neg:49)
+[rough search] opt_beta:1e-09,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.791700
+[narrow search] opt_beta:1e-09,	opt_C:177827941.004,	opt_gamma:0.0,	g:0.799279
+[optimized] acc:0.931034,	accP:1.000000,	accN:0.918367,	g:0.958315
+dim:5, var:2.236, ratio:5(2/5): train samples (pos:40, neg:196)
+dim:5, var:2.236, ratio:5(2/5): test samples (pos:9, neg:49)
+[rough search] opt_beta:0.01,	opt_C:100.0,	opt_gamma:0.0,	g:0.823075
+[narrow search] opt_beta:0.0177827941004,	opt_C:56.234132519,	opt_gamma:0.0,	g:0.828199
+[optimized] acc:0.741379,	accP:0.666667,	accN:0.755102,	g:0.709508
+dim:5, var:2.236, ratio:5(3/5): train samples (pos:40, neg:196)
+dim:5, var:2.236, ratio:5(3/5): test samples (pos:9, neg:49)
+[rough search] opt_beta:1e-05,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.830686
+[narrow search] opt_beta:5.6234132519e-06,	opt_C:56234132.519,	opt_gamma:0.0,	g:0.835763
+[optimized] acc:0.810345,	accP:0.666667,	accN:0.836735,	g:0.746876
+dim:5, var:2.236, ratio:5(4/5): train samples (pos:36, neg:196)
+dim:5, var:2.236, ratio:5(4/5): test samples (pos:13, neg:49)
+[rough search] opt_beta:1e-05,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.842817
+[narrow search] opt_beta:1e-05,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.842817
+[optimized] acc:0.790323,	accP:0.384615,	accN:0.897959,	g:0.587681
+[dim:5, var:2.236, ratio:5]: acc:0.827030,	accP:0.676923,	accN:0.861224,	g:0.755219,	g_from_ave.:0.763533
+dim:5, var:2.236, ratio:10(0/5): train samples (pos:40, neg:392)
+dim:5, var:2.236, ratio:10(0/5): test samples (pos:9, neg:98)
+[rough search] opt_beta:1e-06,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.825491
+[narrow search] opt_beta:3.16227766017e-06,	opt_C:177827941.004,	opt_gamma:0.0,	g:0.835731
+[optimized] acc:0.841121,	accP:0.666667,	accN:0.857143,	g:0.755929
+dim:5, var:2.236, ratio:10(1/5): train samples (pos:40, neg:392)
+dim:5, var:2.236, ratio:10(1/5): test samples (pos:9, neg:98)
+[rough search] opt_beta:1e-09,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.810253
+[narrow search] opt_beta:1e-09,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.810253
+[optimized] acc:0.803738,	accP:1.000000,	accN:0.785714,	g:0.886405
+dim:5, var:2.236, ratio:10(2/5): train samples (pos:40, neg:392)
+dim:5, var:2.236, ratio:10(2/5): test samples (pos:9, neg:98)
+[rough search] opt_beta:0.0001,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.815554
+[narrow search] opt_beta:0.0001,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.815554
+[optimized] acc:0.775701,	accP:0.888889,	accN:0.765306,	g:0.824786
+dim:5, var:2.236, ratio:10(3/5): train samples (pos:40, neg:392)
+dim:5, var:2.236, ratio:10(3/5): test samples (pos:9, neg:98)
+[rough search] opt_beta:1e-07,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.831990
+[narrow search] opt_beta:1e-07,	opt_C:177827941.004,	opt_gamma:0.0,	g:0.833260
+[optimized] acc:0.775701,	accP:1.000000,	accN:0.755102,	g:0.868966
+dim:5, var:2.236, ratio:10(4/5): train samples (pos:36, neg:392)
+dim:5, var:2.236, ratio:10(4/5): test samples (pos:13, neg:98)
+[rough search] opt_beta:1e-07,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.827425
+[narrow search] opt_beta:5.6234132519e-07,	opt_C:5623413251.9,	opt_gamma:0.0,	g:0.837760
+[optimized] acc:0.882883,	accP:0.615385,	accN:0.918367,	g:0.751764
+[dim:5, var:2.236, ratio:10]: acc:0.815829,	accP:0.834188,	accN:0.816327,	g:0.817570,	g_from_ave.:0.825209
+dim:5, var:2.236, ratio:20(0/5): train samples (pos:40, neg:784)
+dim:5, var:2.236, ratio:20(0/5): test samples (pos:9, neg:196)
+[rough search] opt_beta:0.0001,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.833482
+[narrow search] opt_beta:0.0001,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.833482
+[optimized] acc:0.829268,	accP:0.555556,	accN:0.841837,	g:0.683877
+dim:5, var:2.236, ratio:20(1/5): train samples (pos:40, neg:784)
+dim:5, var:2.236, ratio:20(1/5): test samples (pos:9, neg:196)
+[rough search] opt_beta:1e-08,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.800545
+[narrow search] opt_beta:1e-08,	opt_C:316227766.017,	opt_gamma:0.0,	g:0.805048
+[optimized] acc:0.712195,	accP:1.000000,	accN:0.698980,	g:0.836050
+dim:5, var:2.236, ratio:20(2/5): train samples (pos:40, neg:784)
+dim:5, var:2.236, ratio:20(2/5): test samples (pos:9, neg:196)
+[rough search] opt_beta:1e-05,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.789858
+[narrow search] opt_beta:1e-05,	opt_C:31622776.6017,	opt_gamma:0.0,	g:0.791099
+[optimized] acc:0.814634,	accP:0.888889,	accN:0.811224,	g:0.849169
+dim:5, var:2.236, ratio:20(3/5): train samples (pos:40, neg:784)
+dim:5, var:2.236, ratio:20(3/5): test samples (pos:9, neg:196)
+[rough search] opt_beta:1e-08,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.814955
+[narrow search] opt_beta:1e-08,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.814955
+[optimized] acc:0.795122,	accP:1.000000,	accN:0.785714,	g:0.886405
+dim:5, var:2.236, ratio:20(4/5): train samples (pos:36, neg:784)
+dim:5, var:2.236, ratio:20(4/5): test samples (pos:13, neg:196)
+[rough search] opt_beta:1e-07,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.860181
+[narrow search] opt_beta:1e-07,	opt_C:562341325.19,	opt_gamma:0.0,	g:0.871265
+[optimized] acc:0.751196,	accP:0.615385,	accN:0.760204,	g:0.683972
+[dim:5, var:2.236, ratio:20]: acc:0.780483,	accP:0.811966,	accN:0.779592,	g:0.787895,	g_from_ave.:0.795614
+dim:5, var:2.236, ratio:50(0/5): train samples (pos:40, neg:1960)
+dim:5, var:2.236, ratio:50(0/5): test samples (pos:9, neg:490)
+[rough search] opt_beta:0.0001,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.817413
+[narrow search] opt_beta:0.0001,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.817413
+[optimized] acc:0.857715,	accP:0.555556,	accN:0.863265,	g:0.692526
+dim:5, var:2.236, ratio:50(1/5): train samples (pos:40, neg:1960)
+dim:5, var:2.236, ratio:50(1/5): test samples (pos:9, neg:490)
+[rough search] opt_beta:1e-09,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.789544
+[narrow search] opt_beta:1e-09,	opt_C:316227766.017,	opt_gamma:0.0,	g:0.793653
+[optimized] acc:0.755511,	accP:1.000000,	accN:0.751020,	g:0.866614
+dim:5, var:2.236, ratio:50(2/5): train samples (pos:40, neg:1960)
+dim:5, var:2.236, ratio:50(2/5): test samples (pos:9, neg:490)
+[rough search] opt_beta:1e-06,	opt_C:100000.0,	opt_gamma:0.0,	g:0.786647
+[narrow search] opt_beta:5.6234132519e-06,	opt_C:17782.7941004,	opt_gamma:0.0,	g:0.786898
+[optimized] acc:0.757515,	accP:1.000000,	accN:0.753061,	g:0.867791
+dim:5, var:2.236, ratio:50(3/5): train samples (pos:40, neg:1960)
+dim:5, var:2.236, ratio:50(3/5): test samples (pos:9, neg:490)
+[rough search] opt_beta:0.0001,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.802038
+[narrow search] opt_beta:0.000177827941004,	opt_C:316227.766017,	opt_gamma:0.0,	g:0.802293
+[optimized] acc:0.795591,	accP:0.888889,	accN:0.793878,	g:0.840041
+dim:5, var:2.236, ratio:50(4/5): train samples (pos:36, neg:1960)
+dim:5, var:2.236, ratio:50(4/5): test samples (pos:13, neg:490)
+[rough search] opt_beta:1e-07,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.836722
+[narrow search] opt_beta:1e-07,	opt_C:1778279410.04,	opt_gamma:0.0,	g:0.854056
+[optimized] acc:0.799205,	accP:0.615385,	accN:0.804082,	g:0.703434
+[dim:5, var:2.236, ratio:50]: acc:0.793107,	accP:0.811966,	accN:0.793061,	g:0.794081,	g_from_ave.:0.802458
+dim:5, var:2.236, ratio:100(0/5): train samples (pos:40, neg:3920)
+dim:5, var:2.236, ratio:100(0/5): test samples (pos:9, neg:980)
+[rough search] opt_beta:1e-05,	opt_C:100000000.0,	opt_gamma:0.0,	g:0.813784
+[narrow search] opt_beta:1.77827941004e-06,	opt_C:316227766.017,	opt_gamma:0.0,	g:0.822445
+[optimized] acc:0.802831,	accP:0.666667,	accN:0.804082,	g:0.732157
+dim:5, var:2.236, ratio:100(1/5): train samples (pos:40, neg:3920)
+dim:5, var:2.236, ratio:100(1/5): test samples (pos:9, neg:980)
+[rough search] opt_beta:1e-07,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.789472
+[narrow search] opt_beta:5.6234132519e-07,	opt_C:316227766.017,	opt_gamma:0.0,	g:0.806985
+[optimized] acc:0.745197,	accP:1.000000,	accN:0.742857,	g:0.861892
+dim:5, var:2.236, ratio:100(2/5): train samples (pos:40, neg:3920)
+dim:5, var:2.236, ratio:100(2/5): test samples (pos:9, neg:980)
+[rough search] opt_beta:1e-08,	opt_C:10000000.0,	opt_gamma:0.0,	g:0.775461
+[narrow search] opt_beta:3.16227766017e-08,	opt_C:5623413.2519,	opt_gamma:0.0,	g:0.784760
+[optimized] acc:0.772497,	accP:1.000000,	accN:0.770408,	g:0.877729
+dim:5, var:2.236, ratio:100(3/5): train samples (pos:40, neg:3920)
+dim:5, var:2.236, ratio:100(3/5): test samples (pos:9, neg:980)
+[rough search] opt_beta:1e-07,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.802499
+[narrow search] opt_beta:5.6234132519e-08,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.805197
+[optimized] acc:0.754297,	accP:1.000000,	accN:0.752041,	g:0.867203
+dim:5, var:2.236, ratio:100(4/5): train samples (pos:36, neg:3920)
+dim:5, var:2.236, ratio:100(4/5): test samples (pos:13, neg:980)
+[rough search] opt_beta:1e-08,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.853754
+[narrow search] opt_beta:1e-08,	opt_C:1000000000.0,	opt_gamma:0.0,	g:0.853754
+[optimized] acc:0.799597,	accP:0.615385,	accN:0.802041,	g:0.702541
+[dim:5, var:2.236, ratio:100]: acc:0.774884,	accP:0.856410,	accN:0.774286,	g:0.808304,	g_from_ave.:0.814313

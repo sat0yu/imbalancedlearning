@@ -65,16 +65,16 @@ def multiproc(args):
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
     #<FSVMCIL.CENTER>
-    X, label, distance = dist_from_center(X, label)
-    kernel = GaussKernel(beta)
-    gram = kernel.gram(X)
-    mat = kernel.matrix(Y,X)
-    #</FSVMCIL.CENTER>
-
-    #<FSVMCIL.HYPERPLANE>
+    #X, label, distance = dist_from_center(X, label)
     #kernel = GaussKernel(beta)
     #gram = kernel.gram(X)
     #mat = kernel.matrix(Y,X)
+    #</FSVMCIL.CENTER>
+
+    #<FSVMCIL.HYPERPLANE>
+    kernel = GaussKernel(beta)
+    gram = kernel.gram(X)
+    mat = kernel.matrix(Y,X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
@@ -89,19 +89,33 @@ def multiproc(args):
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
-        #distance = dist_from_hyperplane(X, label, beta, _C)
+        distance = dist_from_hyperplane(X, label, beta, _C)
         #</FSVMCIL.HYPERPLANE>
 
-        for _g in gamma_list:
-            clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
+        #<FSVMCIL.EXP>
+        #for _g in gamma_list:
+            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
             #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
             #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
-            weight = clf.exp_decay_function(distance)
-            clf.fit(X, label, C=_C, gram=gram, weight=weight)
+            #weight = clf.exp_decay_function(distance)
+            #clf.fit(X, label, C=_C, gram=gram, weight=weight)
 
-            predict = clf.predict(mat)
-            res.append( (_C,_g)+evaluation(predict, answer) )
+            #predict = clf.predict(mat)
+            #res.append( (_C,_g)+evaluation(predict, answer) )
+        #</FSVMCIL.EXP>
+
+        #<FSVMCIL.LIN>
+        #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+
+        weight = clf.exp_decay_function(distance)
+        clf.fit(X, label, C=_C, gram=gram, weight=weight)
+
+        predict = clf.predict(mat)
+        res.append( (_C,)+evaluation(predict, answer) )
+        #</FSVMCIL.LIN>
 
     return res
 
@@ -132,14 +146,23 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
             args = [ (rough_C, gamma_list, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
 
+            #<FSVMCIL.LIN>
             res_foreach_dataset = np.array(res)
-            #print res_foreach_dataset.shape
-            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
-            #print res_foreach_C_gamma.shape
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+            #</FSVMCIL.LIN>
+
+            #<FSVMCIL.EXP>
+            #res_foreach_dataset = np.array(res)
+            #res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+
+            #for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+            #    _g = np.sqrt(_accP * _accN)
+            #    if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+            #</FSVMCIL.EXP>
 
         print "[rough search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
@@ -151,22 +174,40 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
             args = [ (narrow_C, gamma_list, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
 
+            #<FSVMCIL.LIN>
             res_foreach_dataset = np.array(res)
-            #print res_foreach_dataset.shape
-            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
-            #print res_foreach_C_gamma.shape
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+            #</FSVMCIL.LIN>
+
+            #<FSVMCIL.EXP>
+            #res_foreach_dataset = np.array(res)
+            #res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+
+            #for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+            #    _g = np.sqrt(_accP * _accN)
+            #    if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+            #</FSVMCIL.EXP>
 
         print "[narrow search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
 
         # classify using searched params
-        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
+        #<FSVMCIL.LIN>
+        #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+        #</FSVMCIL.LIN>
+
+        #<FSVMCIL.EXP>
+        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
+        #</FSVMCIL.EXP>
+
         clf.fit(X, label, C=opt_C)
         predict = clf.predict(Y)
         e = evaluation(predict, answer)
