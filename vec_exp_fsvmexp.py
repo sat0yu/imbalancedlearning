@@ -110,7 +110,7 @@ def multiproc(args):
         #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
         clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
 
-        weight = clf.exp_decay_function(distance)
+        weight = clf.linear_decay_function(distance)
         clf.fit(X, label, C=_C, gram=gram, weight=weight)
 
         predict = clf.predict(mat)
