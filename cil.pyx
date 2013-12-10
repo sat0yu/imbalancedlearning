@@ -223,3 +223,62 @@ class FSVMCIL():
 
     def predict(self, target):
         return self.clf.predict(target)
+
+class FSVMCIL_NONVEC():
+    def __init__(self, kernel, decay_function='linear', delta=1., gamma=1.):
+        self.kernel = kernel
+        self.delta = delta
+        self.gamma = gamma
+
+        if decay_function == 'linear':
+            self.decay_function = self.linear_decay_function
+        elif decay_function == 'exp':
+            self.decay_function = self.exp_decay_function
+        else:
+            raise ValueError("the argument named decay_function expects a velue of 'linear' or 'exp'")
+
+    def linear_decay_function(self, X):
+        denominator = max(X) + self.delta
+        return 1. - (X / denominator)
+
+    def exp_decay_function(self, X):
+        ret = np.zeros_like(X)
+
+        for i in range(len(X)):
+            try:
+                ret[i] = 2. / ( 1. + np.exp(self.gamma * X[i]) )
+
+            except FloatingPointError:
+                ret[i] = np.float(10.)**(-320)
+
+        return ret
+
+    def class_weight(self, label, class_label=[1,-1]):
+        numPos = float(len(label[label[:]==class_label[0]]))
+        numNeg = float(len(label[label[:]==class_label[1]]))
+
+        if numPos < numNeg:
+            cPos, cNeg = 1., numPos / numNeg
+        else:
+            cPos, cNeg = numNeg / numPos, 1.
+
+        return (cPos, cNeg)
+
+    def dist_from_estimated_hyperplane(self, sample, label):
+        gram = self.kernel.gram(sample)
+        distance= np.dot(np.diag(label), np.dot(gram, label))
+        return (gram, distance)
+
+    def matrix(self, *args, **kwargs):
+        return self.kernel.matrix(*args, **kwargs)
+
+    def fit(self, gram, label, weight, C=1., class_label=[1,-1]):
+        # equip weight of each class
+        cPos, cNeg = self.class_weight(label, class_label)
+
+        self.clf = svm.SVC(kernel='precomputed', C=C, class_weight={label[0]:cPos, label[1]:cNeg})
+
+        self.clf.fit(gram, label, sample_weight=weight)
+
+    def predict(self, mat):
+        return self.clf.predict(mat)
