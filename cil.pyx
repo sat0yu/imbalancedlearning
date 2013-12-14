@@ -269,6 +269,16 @@ class FSVMCIL_NONVEC():
         distance= np.dot(np.diag(label), np.dot(gram, label))
         return (gram, distance)
 
+    def dist_from_hyperplane(self, gram, label, C=1.):
+        clf = svm.SVC(kernel="precomputed", C=C)
+        clf.fit(gram, label)
+        value = (clf.decision_function(gram))[:,0]
+        distance = np.abs(value)
+        return distance
+
+    def gram(self, *args, **kwargs):
+        return self.kernel.gram(*args, **kwargs)
+
     def matrix(self, *args, **kwargs):
         return self.kernel.matrix(*args, **kwargs)
 
