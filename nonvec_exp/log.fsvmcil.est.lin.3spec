@@ -1,0 +1,26 @@
+[0/5]: train samples (pos:598, neg:3862)
+[0/5]: test samples (pos:149, neg:965)
+[rough search] opt_C:1.0,	g:0.965191
+[narrow search] opt_C:1.0,	g:0.965191
+[optimized] acc:0.982047,	accP:0.932886,	accN:0.989637,	g:0.960843
+[1/5]: train samples (pos:598, neg:3862)
+[1/5]: test samples (pos:149, neg:965)
+[rough search] opt_C:1.0,	g:0.962939
+[narrow search] opt_C:1.0,	g:0.962939
+[optimized] acc:0.984740,	accP:0.926174,	accN:0.993782,	g:0.959383
+[2/5]: train samples (pos:598, neg:3862)
+[2/5]: test samples (pos:149, neg:965)
+[rough search] opt_C:1.0,	g:0.962497
+[narrow search] opt_C:0.56234132519,	g:0.963926
+[optimized] acc:0.983842,	accP:0.919463,	accN:0.993782,	g:0.955901
+[3/5]: train samples (pos:598, neg:3862)
+[3/5]: test samples (pos:149, neg:965)
+[rough search] opt_C:1.0,	g:0.962339
+[narrow search] opt_C:1.0,	g:0.962339
+[optimized] acc:0.979354,	accP:0.919463,	accN:0.988601,	g:0.953406
+[4/5]: train samples (pos:596, neg:3860)
+[4/5]: test samples (pos:151, neg:967)
+[rough search] opt_C:1.0,	g:0.964090
+[narrow search] opt_C:1.0,	g:0.964090
+[optimized] acc:0.989267,	accP:0.953642,	accN:0.994829,	g:0.974018
+[3-spec] acc:0.983850,	accP:0.930326,	accN:0.992126,	g:0.960710,	g_from_ave.:0.960729
