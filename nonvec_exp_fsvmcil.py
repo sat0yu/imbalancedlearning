@@ -47,18 +47,18 @@ def multiproc(args):
     rough_C, gamma_list, p, Y, answer, X, label = args
 
     #<FSVMCIL_NONVEC.ESTIMATE.LIN>
-    #sk = NormalizedSpectrumKernel(p)
-    #clf = FSVMCIL_NONVEC(sk, decay_function="linear", delta=0.000001)
-    #gram, distance = clf.dist_from_estimated_hyperplane(X, label)
-    #mat = clf.matrix(Y, X)
-    #weight = clf.decay_function(distance)
+    sk = NormalizedSpectrumKernel(p)
+    clf = FSVMCIL_NONVEC(sk, decay_function="linear", delta=0.000001)
+    gram, distance = clf.dist_from_estimated_hyperplane(X, label)
+    mat = clf.matrix(Y, X)
+    weight = clf.decay_function(distance)
     #</FSVMCIL_NONVEC.ESTIMATE.LIN>
 
     #<FSVMCIL_NONVEC.ESTIMATE.EXP>
-    sk = NormalizedSpectrumKernel(p)
-    temp = FSVMCIL_NONVEC(sk, decay_function="exp")
-    gram, distance = temp.dist_from_estimated_hyperplane(X, label)
-    mat = temp.matrix(Y, X)
+    #sk = NormalizedSpectrumKernel(p)
+    #temp = FSVMCIL_NONVEC(sk, decay_function="exp")
+    #gram, distance = temp.dist_from_estimated_hyperplane(X, label)
+    #mat = temp.matrix(Y, X)
     #</FSVMCIL_NONVEC.ESTIMATE.EXP>
 
     #<FSVMCIL_NONVEC.HYPERPLANE.LIN>
@@ -78,9 +78,9 @@ def multiproc(args):
     res = []
     for _C in rough_C:
         #<FSVMCIL_NONVEC.ESTIMATE.LIN>
-        #clf.fit(gram, label, weight, C=_C)
-        #predict = clf.predict(mat)
-        #res.append( (_C,)+evaluation(predict, answer) )
+        clf.fit(gram, label, weight, C=_C)
+        predict = clf.predict(mat)
+        res.append( (_C,)+evaluation(predict, answer) )
         #</FSVMCIL_NONVEC.ESTIMATE.LIN>
 
         #<FSVMCIL_NONVEC.HYPERPLANE.LIN>
@@ -92,12 +92,12 @@ def multiproc(args):
         #</FSVMCIL_NONVEC.HYPERPLANE.LIN>
 
         #<FSVMCIL_NONVEC.ESTIMATE.EXP>
-        for _g in gamma_list:
-            clf = FSVMCIL_NONVEC(sk, decay_function="exp", gamma=_g)
-            weight = clf.decay_function(distance)
-            clf.fit(gram, label, weight, C=_C)
-            predict = clf.predict(mat)
-            res.append( (_C,_g)+evaluation(predict, answer) )
+        #for _g in gamma_list:
+        #    clf = FSVMCIL_NONVEC(sk, decay_function="exp", gamma=_g)
+        #    weight = clf.decay_function(distance)
+        #    clf.fit(gram, label, weight, C=_C)
+        #    predict = clf.predict(mat)
+        #    res.append( (_C,_g)+evaluation(predict, answer) )
         #</FSVMCIL_NONVEC.ESTIMATE.EXP>
 
         #<FSVMCIL_NONVEC.HYPERPLANE.EXP>
@@ -135,21 +135,21 @@ def procedure(dataname, stringdata, datalabel, p, nCV=5):
         res = pool.map(multiproc, args)
 
         #<FSVMCIL_NONVEC.LIN>
-        #res_foreach_dataset = np.array(res)
-        #res_foreach_C = np.average(res_foreach_dataset, axis=0)
+        res_foreach_dataset = np.array(res)
+        res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-        #for _C, _acc, _accP, _accN, _g in res_foreach_C:
-        #    _g = np.sqrt(_accP * _accN)
-        #    if _g > max_g: max_g, opt_C  = _g, _C
+        for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            _g = np.sqrt(_accP * _accN)
+            if _g > max_g: max_g, opt_C  = _g, _C
         #</FSVMCIL_NONVEC.LIN>
 
         #<FSVMCIL_NONVEC.EXP>
-        res_foreach_dataset = np.array(res)
-        res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+        #res_foreach_dataset = np.array(res)
+        #res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
 
-        for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
-            _g = np.sqrt(_accP * _accN)
-            if _g > max_g: max_g, opt_C, opt_gamma  = _g, _C, _gamma
+        #for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+        #    _g = np.sqrt(_accP * _accN)
+        #    if _g > max_g: max_g, opt_C, opt_gamma  = _g, _C, _gamma
         #</FSVMCIL_NONVEC.EXP>
 
         print "[rough search] opt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_C,opt_gamma,max_g)
@@ -161,21 +161,21 @@ def procedure(dataname, stringdata, datalabel, p, nCV=5):
         res = pool.map(multiproc, args)
 
         #<FSVMCIL_NONVEC.LIN>
-        #res_foreach_dataset = np.array(res)
-        #res_foreach_C = np.average(res_foreach_dataset, axis=0)
+        res_foreach_dataset = np.array(res)
+        res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-        #for _C, _acc, _accP, _accN, _g in res_foreach_C:
-        #    _g = np.sqrt(_accP * _accN)
-        #    if _g > max_g: max_g, opt_C = _g, _C
+        for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            _g = np.sqrt(_accP * _accN)
+            if _g > max_g: max_g, opt_C = _g, _C
         #</FSVMCIL_NONVEC.LIN>
 
         #<FSVMCIL_NONVEC.EXP>
-        res_foreach_dataset = np.array(res)
-        res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+        #res_foreach_dataset = np.array(res)
+        #res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
 
-        for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
-            _g = np.sqrt(_accP * _accN)
-            if _g > max_g: max_g, opt_C, opt_gamma = _g, _C, _gamma
+        #for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+        #    _g = np.sqrt(_accP * _accN)
+        #    if _g > max_g: max_g, opt_C, opt_gamma = _g, _C, _gamma
         #</FSVMCIL_NONVEC.EXP>
 
         print "[narrow search] opt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_C,opt_gamma,max_g)
@@ -183,19 +183,19 @@ def procedure(dataname, stringdata, datalabel, p, nCV=5):
 
         # classify using searched params
         #<FSVMCIL_NONVEC.LIN>
-        #sk = NormalizedSpectrumKernel(p)
-        #clf = FSVMCIL_NONVEC(sk, decay_function="linear", delta=0.000001)
-        #gram, distance = clf.dist_from_estimated_hyperplane(X, label)
-        #mat = clf.matrix(Y, X)
-        #weight = clf.decay_function(distance)
-        #</FSVMCIL_NONVEC.LIN>
-
-        #<FSVMCIL_NONVEC.EXP>
         sk = NormalizedSpectrumKernel(p)
-        clf = FSVMCIL_NONVEC(sk, decay_function="exp", gamma=opt_gamma)
+        clf = FSVMCIL_NONVEC(sk, decay_function="linear", delta=0.000001)
         gram, distance = clf.dist_from_estimated_hyperplane(X, label)
         mat = clf.matrix(Y, X)
         weight = clf.decay_function(distance)
+        #</FSVMCIL_NONVEC.LIN>
+
+        #<FSVMCIL_NONVEC.EXP>
+        #sk = NormalizedSpectrumKernel(p)
+        #clf = FSVMCIL_NONVEC(sk, decay_function="exp", gamma=opt_gamma)
+        #gram, distance = clf.dist_from_estimated_hyperplane(X, label)
+        #mat = clf.matrix(Y, X)
+        #weight = clf.decay_function(distance)
         #</FSVMCIL_NONVEC.EXP>
 
         #<FSVMCIL_NONVEC.LIN>
