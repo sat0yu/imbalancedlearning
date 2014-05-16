@@ -10,6 +10,7 @@ import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
 from kernel import *
 from mlutil import *
+from cil import *
 
 def effectCausedByClassImbalance():
     N = 1000
@@ -67,22 +68,49 @@ def fuzzyMembership():
     dataset = np.r_[dataset[Y[:]==-1,:], dataset[Y[:]==1,:]]
     X, Y = dataset[:,:-1], dataset[:,-1]
 
-    from matplotlib import pyplot as plt
     plt.plot(X[Y[:]==1,0],X[Y[:]==1,1], "bo")
     plt.plot(X[Y[:]==-1,0],X[Y[:]==-1,1], "ro")
     plt.show()
 
-    W = proposed(X, Y)
+    #X, Y, W = proposed(X, Y)
+    #X, Y, W = fsvmcil(X, Y, 'center', 'linear')
+    X, Y, W = fsvmcil(X, Y, 'estimate', 'linear')
+    #X, Y, W = fsvmcil(X, Y, 'hyperplane', 'linear')
+    #X, Y, W = fsvmcil(X, Y, 'center', 'exp')
+    #X, Y, W = fsvmcil(X, Y, 'estimate', 'exp')
+    #X, Y, W = fsvmcil(X, Y, 'hyperplane', 'exp')
     W_map = np.zeros((N,N))
-    for i in np.c_[X[:,0]+N/2, X[:,1]+N/2+1, Y*W]:
-        W_map[int(i[0])][-int(i[1])] = i[2]
-    hinton(W_map)
+    for i in np.c_[X[:,0]+N/2, X[:,1]+N/2, Y*W]:
+        W_map[int(i[1])][-int(i[0])] = i[2]
+    fig, ax = plt.subplots()
+    ax.imshow(W_map, cmap=plt.cm.gray, interpolation='nearest')
     plt.show()
 
-    from matplotlib import pyplot as plt
-    plt.plot(X[Y[:]==1,0],X[Y[:]==1,1], "bo")
-    plt.plot(X[Y[:]==-1,0],X[Y[:]==-1,1], "ro")
-    plt.show()
+def fsvmcil(X, Y, distance_function='center', decay_function='linear'):
+    beta = 0.001
+    delta = 1.
+    gamma = 0.1
+    clf = FSVMCIL(beta, distance_function=distance_function, decay_function=decay_function, delta=delta, gamma=gamma)
+
+    if distance_function is 'center':
+        X, Y, d = clf.dist_from_center(X, Y)
+    elif distance_function is 'estimate':
+        X, Y, d = clf.dist_from_estimated_hyperplane(X, Y)
+    elif distance_function is 'hyperplane':
+        X, Y, d = clf.dist_from_hyperplane(X, Y)
+    else:
+        raise ValueError()
+
+    if decay_function is 'linear':
+        W = clf.linear_decay_function(d)
+    elif decay_function is 'exp':
+        W = clf.exp_decay_function(d)
+    else:
+        raise ValueError()
+
+    for i in W: print i
+
+    return (X, Y, W)
 
 def proposed(X, Y):
     kernel = GaussKernel(0.001)
@@ -90,29 +118,7 @@ def proposed(X, Y):
     numN = len(Y[:]==-1)
     gramN, gramP = gram[:numN,:numN], gram[numN:,numN:]
     weightN, weightP = np.sum(gramN, axis=1), np.sum(gramP, axis=1)
-    return np.r_[weightN/numN,  weightP/(len(Y)-numN)]
-
-def hinton(matrix, max_weight=None, ax=None):
-    """Draw Hinton diagram for visualizing a weight matrix."""
-    ax = ax if ax is not None else plt.gca()
-
-    if not max_weight:
-        max_weight = 2**np.ceil(np.log(np.abs(matrix).max())/np.log(2))
-
-    ax.patch.set_facecolor('gray')
-    ax.set_aspect('equal', 'box')
-    ax.xaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_major_locator(plt.NullLocator())
-
-    for (x,y),w in np.ndenumerate(matrix):
-        color = 'white' if w > 0 else 'black'
-        size = np.sqrt(np.abs(w))
-        rect = plt.Rectangle([x - size / 2, y - size / 2], size, size,
-                             facecolor=color, edgecolor=color)
-        ax.add_patch(rect)
-
-    ax.autoscale_view()
-    ax.invert_yaxis()
+    return (X, Y, np.r_[weightN/numN,  weightP/(len(Y)-numN)])
 
 if __name__ == '__main__':
     fuzzyMembership()
