@@ -22,6 +22,9 @@ class Dataset():
                 self.label = self.raw[:,-1]
                 self.data = self.raw[:,:-1]
 
+    def normalize(self):
+        return self.data / np.max(np.fabs(self.data), axis=0)
+
 if __name__ == '__main__':
     Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
     Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
