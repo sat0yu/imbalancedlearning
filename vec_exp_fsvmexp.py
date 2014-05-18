@@ -194,9 +194,9 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
         # classify using searched params
         #<FSVMCIL.LIN>
-        clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
         #</FSVMCIL.LIN>
 
         #<FSVMCIL.EXP>
