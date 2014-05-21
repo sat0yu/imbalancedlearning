@@ -16,10 +16,10 @@ def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
     ## <Differenterrorcosts>
-    gk = GaussKernel(beta)
-    clf = DifferentErrorCosts(gk)
-    gram = gk.gram(X)
-    mat = gk.matrix(Y,X)
+    #gk = GaussKernel(beta)
+    #clf = DifferentErrorCosts(gk)
+    #gram = gk.gram(X)
+    #mat = gk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
@@ -32,14 +32,14 @@ def multiproc(args):
     res = []
     for _C in rough_C:
         ## <SVM>
-        #clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        #clf.fit(X, label)
-        #predict = clf.predict(Y)
+        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        clf.fit(X, label)
+        predict = clf.predict(Y)
         ## </SVM>
 
         ## <Differenterrorcosts>
-        clf.fit(X, label, C=_C, gram=gram)
-        predict = clf.predict(mat, precomputed=True)
+        #clf.fit(X, label, C=_C, gram=gram)
+        #predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
@@ -108,13 +108,13 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         # classify using searched params
 
         ## <SVM>
-        #clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
-        #clf.fit(X, label)
+        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        clf.fit(X, label)
         ## </SVM>
 
         ## <Differenterrorcosts>
-        clf = DifferentErrorCosts( GaussKernel(opt_beta) )
-        clf.fit(X, label, C=opt_C)
+        #clf = DifferentErrorCosts( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
