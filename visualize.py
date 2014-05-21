@@ -79,11 +79,13 @@ def fuzzyMembership():
     #X, Y, W = fsvmcil(X, Y, 'center', 'exp')
     #X, Y, W = fsvmcil(X, Y, 'estimate', 'exp')
     #X, Y, W = fsvmcil(X, Y, 'hyperplane', 'exp')
+
+    print "W is in [%s, %s] and has a mean %s, a variance %s" % (min(W), max(W), np.mean(W), np.var(W))
     W_map = np.zeros((N,N))
     for i in np.c_[X[:,0]+N/2, X[:,1]+N/2, Y*W]:
         W_map[int(i[1])][-int(i[0])] = i[2]
     fig, ax = plt.subplots()
-    ax.imshow(W_map, cmap=plt.cm.gray, interpolation='nearest')
+    ax.imshow(W_map, cmap=plt.cm.seismic_r, interpolation='nearest')
     plt.show()
 
 def fsvmcil(X, Y, distance_function='center', decay_function='linear'):
@@ -107,8 +109,6 @@ def fsvmcil(X, Y, distance_function='center', decay_function='linear'):
         W = clf.exp_decay_function(d)
     else:
         raise ValueError()
-
-    for i in W: print i
 
     return (X, Y, W)
 
