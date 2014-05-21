@@ -68,13 +68,13 @@ def fuzzyMembership():
     dataset = np.r_[dataset[Y[:]==-1,:], dataset[Y[:]==1,:]]
     X, Y = dataset[:,:-1], dataset[:,-1]
 
-    plt.plot(X[Y[:]==1,0],X[Y[:]==1,1], "bo")
-    plt.plot(X[Y[:]==-1,0],X[Y[:]==-1,1], "ro")
-    plt.show()
+    #plt.plot(X[Y[:]==1,0],X[Y[:]==1,1], "bo")
+    #plt.plot(X[Y[:]==-1,0],X[Y[:]==-1,1], "ro")
+    #plt.show()
 
-    #X, Y, W = proposed(X, Y)
+    X, Y, W = proposed(X, Y)
     #X, Y, W = fsvmcil(X, Y, 'center', 'linear')
-    X, Y, W = fsvmcil(X, Y, 'estimate', 'linear')
+    #X, Y, W = fsvmcil(X, Y, 'estimate', 'linear')
     #X, Y, W = fsvmcil(X, Y, 'hyperplane', 'linear')
     #X, Y, W = fsvmcil(X, Y, 'center', 'exp')
     #X, Y, W = fsvmcil(X, Y, 'estimate', 'exp')
@@ -85,8 +85,21 @@ def fuzzyMembership():
     for i in np.c_[X[:,0]+N/2, X[:,1]+N/2, Y*W]:
         W_map[int(i[1])][-int(i[0])] = i[2]
     fig, ax = plt.subplots()
-    ax.imshow(W_map, cmap=plt.cm.seismic_r, interpolation='nearest')
-    plt.show()
+    for tick in ax.xaxis.get_major_ticks(): tick.label.set_fontsize('xx-small')
+    for tick in ax.yaxis.get_major_ticks(): tick.label.set_fontsize('xx-small')
+    ax.imshow(W_map, cmap=plt.cm.seismic_r, interpolation='nearest', \
+            extent=[-50,50,-50,50], vmax=max(W), vmin=-max(W))
+
+    #plt.show()
+    fig.set_size_inches(2,2)
+
+    fig.savefig('proposed.eps', dpi=300)
+    #fig.savefig('fsvmcil.lin.cen.eps', dpi=300)
+    #fig.savefig('fsvmcil.lin.est.eps', dpi=300)
+    #fig.savefig('fsvmcil.lin.hyp.eps', dpi=300)
+    #fig.savefig('fsvmcil.exp.cen.eps', dpi=300)
+    #fig.savefig('fsvmcil.exp.est.eps', dpi=300)
+    #fig.savefig('fsvmcil.exp.hyp.eps', dpi=300)
 
 def fsvmcil(X, Y, distance_function='center', decay_function='linear'):
     beta = 0.001
