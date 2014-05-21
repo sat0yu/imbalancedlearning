@@ -72,34 +72,62 @@ def fuzzyMembership():
     #plt.plot(X[Y[:]==-1,0],X[Y[:]==-1,1], "ro")
     #plt.show()
 
-    X, Y, W = proposed(X, Y)
-    #X, Y, W = fsvmcil(X, Y, 'center', 'linear')
-    #X, Y, W = fsvmcil(X, Y, 'estimate', 'linear')
-    #X, Y, W = fsvmcil(X, Y, 'hyperplane', 'linear')
-    #X, Y, W = fsvmcil(X, Y, 'center', 'exp')
-    #X, Y, W = fsvmcil(X, Y, 'estimate', 'exp')
-    #X, Y, W = fsvmcil(X, Y, 'hyperplane', 'exp')
+    fsvmcils = [
+                    ('center', 'linear'),
+                    ('estimate', 'linear'),
+                    ('hyperplane', 'linear'),
+                    ('center', 'exp'),
+                    ('estimate', 'exp'),
+                    ('hyperplane', 'exp'),
+                ]
 
-    print "W is in [%s, %s] and has a mean %s, a variance %s" % (min(W), max(W), np.mean(W), np.var(W))
-    W_map = np.zeros((N,N))
-    for i in np.c_[X[:,0]+N/2, X[:,1]+N/2, Y*W]:
-        W_map[int(i[1])][-int(i[0])] = i[2]
-    fig, ax = plt.subplots()
-    for tick in ax.xaxis.get_major_ticks(): tick.label.set_fontsize('xx-small')
-    for tick in ax.yaxis.get_major_ticks(): tick.label.set_fontsize('xx-small')
-    ax.imshow(W_map, cmap=plt.cm.seismic_r, interpolation='nearest', \
-            extent=[-50,50,-50,50], vmax=max(W), vmin=-max(W))
+    for dist, decay in fsvmcils:
+        ret = optimizing_fsvmcil(X, Y, distance_function=dist, decay_function=decay)
+        if ret is None: continue
+        X, Y, W = ret
 
-    #plt.show()
-    fig.set_size_inches(2,2)
+        print "W is in [%s, %s] and has a mean %s, a variance %s" % (min(W), max(W), np.mean(W), np.var(W))
+        W_map = np.zeros((N,N))
+        for i in np.c_[X[:,0]+N/2, X[:,1]+N/2, Y*W]:
+            W_map[int(i[1])][-int(i[0])] = i[2]
+        fig, ax = plt.subplots()
+        for tick in ax.xaxis.get_major_ticks(): tick.label.set_fontsize('xx-small')
+        for tick in ax.yaxis.get_major_ticks(): tick.label.set_fontsize('xx-small')
+        ax.imshow(W_map, cmap=plt.cm.seismic_r, interpolation='nearest', \
+                extent=[-50,50,-50,50], vmax=max(W), vmin=-max(W))
 
-    fig.savefig('proposed.eps', dpi=300)
-    #fig.savefig('fsvmcil.lin.cen.eps', dpi=300)
-    #fig.savefig('fsvmcil.lin.est.eps', dpi=300)
-    #fig.savefig('fsvmcil.lin.hyp.eps', dpi=300)
-    #fig.savefig('fsvmcil.exp.cen.eps', dpi=300)
-    #fig.savefig('fsvmcil.exp.est.eps', dpi=300)
-    #fig.savefig('fsvmcil.exp.hyp.eps', dpi=300)
+        fig.set_size_inches(2,2)
+        fig.savefig('fsvmcil.%s.%s.eps' % (dist, decay), dpi=300)
+
+def optimizing_fsvmcil(X, Y, distance_function='center', decay_function='linear'):
+    beta = 0.001
+    delta_range = [0.01, 0.1, 1., 10., 100.]
+    gamma_range = [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.]
+
+    clf = FSVMCIL(beta, distance_function=distance_function)
+    if distance_function == 'center':
+        X, Y, d = clf.dist_from_center(X, Y)
+    elif distance_function == 'estimate':
+        X, Y, d = clf.dist_from_estimated_hyperplane(X, Y)
+    elif distance_function == 'hyperplane':
+        X, Y, d = clf.dist_from_hyperplane(X, Y)
+    else:
+        raise ValueError(distance_function)
+
+    if decay_function == 'linear':
+        for delta in delta_range:
+            clf = FSVMCIL(beta, distance_function=distance_function, decay_function=decay_function, delta=delta)
+            W = clf.linear_decay_function(d)
+            if 0.5 <= max(W) - min(W): return (X, Y, W)
+    elif decay_function == 'exp':
+        for gamma in gamma_range:
+            clf = FSVMCIL(beta, distance_function=distance_function, decay_function=decay_function, gamma=gamma)
+            W = clf.exp_decay_function(d)
+            if 0.5 <= max(W) - min(W): return (X, Y, W)
+    else:
+        raise ValueError(decay_function)
+
+    return None
 
 def fsvmcil(X, Y, distance_function='center', decay_function='linear'):
     beta = 0.001
