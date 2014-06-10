@@ -22,35 +22,16 @@ class Dataset():
                 self.label = self.raw[:,-1]
                 self.data = self.raw[:,:-1]
 
+    def normalize(self):
+        return self.data / np.max(np.fabs(self.data), axis=0)
+
 if __name__ == '__main__':
-    # values in datafile most be preproccessed, using shell cmd like below
-
-    # sed "s/[^5]$/-1/g" page-blocks.data | sed "s/5$/1/g" > page-blocks.rplcd
     Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-
-    # sed "s/CYT$/-1/g" yeast.data | sed "s/NUC$/-1/g" | sed "s/MIT$/-1/g" | sed "s/ME3$/-1/g" | sed "s/ME2$/1/g" | sed "s/ME1$/-1/g" | sed "s/EXC$/-1/g" | sed "s/VAC$/-1/g" | sed "s/POX$/-1/g" | sed "s/ERL$/-1/g" > yeast.rplcd
     Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-
-    # in case using FreeBSD sed
-    # sed 's/,15$/,p/g' abalone.data | sed 's/,[0-9]$/,-1/g' | sed 's/,[12][0-9]$/,-1/g' | sed 's/,p$/,1/g' > abalone.rplcd
-    # in case using GNU-sed
-    # sed 's/,15$/,p/g' abalone.data | sed 's/,[12]\?[0-9]/,-1/g' | sed 's/,p$/,1/g' > abalone.rplcd
     Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-
-    # sed 's/im$/1/g' ecoli.data | sed 's/cp\|pp\|imU\|om\|omL\|imL\|imS$/-1/g' > ecoli.rplcd
     Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-
-    # sed 's/,1.$/,p/g' transfusion.data| sed 's/,0.$/,-1/g' | sed 's/,p$/,1/g' | sed 's/ //g' > transfusion.rplcd
     Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-
-    # sed 's/1$/-1/g' haberman.data | sed 's/2$/1/g' > haberman.rplcd
     Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-
-    # sed 's/,[12]$/,-1/g' waveform.data | sed 's/,0$/,1/g' > waveform.rplcd
     Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-
-    # sed 's/,0$/,-1/g' pima-indians-diabetes.data > pima-indians-diabetes.rplcd
     Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-
-    # sed 's/^ham\t/-1\t/g' SMSSpamCollection | sed 's/^spam\t/1\t/g' > SMSSpamCollection.rplcd
     Dataset("data/SMSSpamCollection.rplcd", isNonvectorial=True, delimiter='\t', dtype={'names':('0','1'), 'formats':('f8','S512')})

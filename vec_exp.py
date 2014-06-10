@@ -16,48 +16,46 @@ def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
     ## <Differenterrorcosts>
-    gk = GaussKernel(beta)
-    clf = DifferentErrorCosts(gk)
-    gram = gk.gram(X)
-    mat = gk.matrix(Y,X)
+    #gk = GaussKernel(beta)
+    #clf = DifferentErrorCosts(gk)
+    #gram = gk.gram(X)
+    #mat = gk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
-    #gk = GaussKernel(beta)
-    #clf = KernelProbabilityFuzzySVM(gk)
-    #X, gram, label, weight = clf.precompute(X, label)
-    #mat = gk.matrix(Y,X)
+    gk = GaussKernel(beta)
+    clf = KernelProbabilityFuzzySVM(gk)
+    X, gram, label, weight = clf.precompute(X, label)
+    mat = gk.matrix(Y,X)
     ## </Kernelprobabilityfuzzysvm>
 
     res = []
     for _C in rough_C:
         ## <SVM>
-        #clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        #clf.fit(X, label)
-        #predict = clf.predict(Y)
+        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        clf.fit(X, label)
+        predict = clf.predict(Y)
         ## </SVM>
 
         ## <Differenterrorcosts>
-        clf.fit(X, label, C=_C, gram=gram)
-        predict = clf.predict(mat, precomputed=True)
+        #clf.fit(X, label, C=_C, gram=gram)
+        #predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #predict = clf.predict(mat, precomputed=True)
+        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>
 
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
 
-def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
+def procedure(dataname, dataset, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
-
-    dataset = createImbalanceClassDataset(dataset, ratio)
 
     # cross varidation
     scores = []
@@ -110,18 +108,18 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
         # classify using searched params
 
         ## <SVM>
-        #clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
-        #clf.fit(X, label)
+        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        clf.fit(X, label)
         ## </SVM>
 
         ## <Differenterrorcosts>
-        clf = DifferentErrorCosts( GaussKernel(opt_beta) )
-        clf.fit(X, label, C=opt_C)
+        #clf = DifferentErrorCosts( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
-        #clf.fit(X, label, C=opt_C)
+        clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
+        clf.fit(X, label, C=opt_C)
         ## </Kernelprobabilityfuzzysvm>
 
         predict = clf.predict(Y)
@@ -135,13 +133,34 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    seed = 0
-    ratio = [1,2,5,10,20,50,100]
-    raw_ratio = max(ratio)
-    N = 5000
-    dim = 5
-    var = np.sqrt(dim)
-    dataset = createTwoClassDataset([(var**2)*np.identity(dim)]*2, 2*var, N, raw_ratio, seed=0)
+    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
+    ecoli.raw = np.c_[ecoli.normalize(), ecoli.label]
+    procedure('ecoli', ecoli.raw, label_index=-1)
 
-    for r in ratio:
-        procedure("dim:%d, var:%.3f, ratio:%d" % (dim,var,r), dataset, r, nCV=5, label_index=0)
+    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+    transfusion.raw = np.c_[transfusion.normalize(), transfusion.label]
+    procedure('transfusion', transfusion.raw, label_index=-1)
+
+    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    haberman.raw = np.c_[haberman.normalize(), haberman.label]
+    procedure('haberman', haberman.raw, label_index=-1)
+
+    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    pima.raw = np.c_[pima.normalize(), pima.label]
+    procedure('pima', pima.raw, label_index=-1)
+
+    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+    yeast.raw = np.c_[yeast.normalize(), yeast.label]
+    procedure('yeast', yeast.raw, label_index=-1)
+
+    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+    page.raw = np.c_[page.normalize(), page.label]
+    procedure('page-block', page.raw, label_index=-1)
+
+    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+    abalone.raw = np.c_[abalone.normalize(), abalone.label]
+    procedure('abalone', abalone.raw, label_index=-1)
+
+    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    waveform.raw = np.c_[waveform.normalize(), waveform.label]
+    procedure('waveform', waveform.raw, label_index=-1)

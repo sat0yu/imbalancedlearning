@@ -65,16 +65,16 @@ def multiproc(args):
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
     #<FSVMCIL.CENTER>
-    X, label, distance = dist_from_center(X, label)
-    kernel = GaussKernel(beta)
-    gram = kernel.gram(X)
-    mat = kernel.matrix(Y,X)
-    #</FSVMCIL.CENTER>
-
-    #<FSVMCIL.HYPERPLANE>
+    #X, label, distance = dist_from_center(X, label)
     #kernel = GaussKernel(beta)
     #gram = kernel.gram(X)
     #mat = kernel.matrix(Y,X)
+    #</FSVMCIL.CENTER>
+
+    #<FSVMCIL.HYPERPLANE>
+    kernel = GaussKernel(beta)
+    gram = kernel.gram(X)
+    mat = kernel.matrix(Y,X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
@@ -89,44 +89,42 @@ def multiproc(args):
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
-        #distance = dist_from_hyperplane(X, label, beta, _C)
+        distance = dist_from_hyperplane(X, label, beta, _C)
         #</FSVMCIL.HYPERPLANE>
 
         #<FSVMCIL.EXP>
-        #for _g in gamma_list:
+        for _g in gamma_list:
             #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
             #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
-            #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
+            clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
-            #weight = clf.exp_decay_function(distance)
-            #clf.fit(X, label, C=_C, gram=gram, weight=weight)
+            weight = clf.exp_decay_function(distance)
+            clf.fit(X, label, C=_C, gram=gram, weight=weight)
 
-            #predict = clf.predict(mat)
-            #res.append( (_C,_g)+evaluation(predict, answer) )
+            predict = clf.predict(mat)
+            res.append( (_C,_g)+evaluation(predict, answer) )
         #</FSVMCIL.EXP>
 
         #<FSVMCIL.LIN>
-        clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
         #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
         #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
 
-        weight = clf.linear_decay_function(distance)
-        clf.fit(X, label, C=_C, gram=gram, weight=weight)
+        #weight = clf.linear_decay_function(distance)
+        #clf.fit(X, label, C=_C, gram=gram, weight=weight)
 
-        predict = clf.predict(mat)
-        res.append( (_C,)+evaluation(predict, answer) )
+        #predict = clf.predict(mat)
+        #res.append( (_C,)+evaluation(predict, answer) )
         #</FSVMCIL.LIN>
 
     return res
 
-def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
+def procedure(dataname, dataset, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
     gamma_list = np.linspace(0.1, 1.0, 10)
-
-    dataset = createImbalanceClassDataset(dataset, ratio)
 
     # cross varidation
     scores = []
@@ -147,49 +145,48 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
             res = pool.map(multiproc, args)
 
             #<FSVMCIL.LIN>
-            res_foreach_dataset = np.array(res)
-            res_foreach_C = np.average(res_foreach_dataset, axis=0)
+            #res_foreach_dataset = np.array(res)
+            #res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _acc, _accP, _accN, _g in res_foreach_C:
-                _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+            #for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            #    _g = np.sqrt(_accP * _accN)
+            #    if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
             #</FSVMCIL.LIN>
 
             #<FSVMCIL.EXP>
-            #res_foreach_dataset = np.array(res)
-            #res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+            res_foreach_dataset = np.array(res)
+            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
 
-            #for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
-            #    _g = np.sqrt(_accP * _accN)
-            #    if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+                _g = np.sqrt(_accP * _accN)
+                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
             #</FSVMCIL.EXP>
 
         print "[rough search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
 
         # narrow parameter search
-        max_g = -999.
         narrow_C = [opt_C*(10**j) for j in narrow_space]
         for beta in [opt_beta*(10**i) for i in narrow_space]:
             args = [ (narrow_C, gamma_list, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
 
             #<FSVMCIL.LIN>
-            res_foreach_dataset = np.array(res)
-            res_foreach_C = np.average(res_foreach_dataset, axis=0)
+            #res_foreach_dataset = np.array(res)
+            #res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _acc, _accP, _accN, _g in res_foreach_C:
-                _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+            #for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            #    _g = np.sqrt(_accP * _accN)
+            #    if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
             #</FSVMCIL.LIN>
 
             #<FSVMCIL.EXP>
-            #res_foreach_dataset = np.array(res)
-            #res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+            res_foreach_dataset = np.array(res)
+            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
 
-            #for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
-            #    _g = np.sqrt(_accP * _accN)
-            #    if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+                _g = np.sqrt(_accP * _accN)
+                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
             #</FSVMCIL.EXP>
 
         print "[narrow search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
@@ -197,15 +194,15 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
 
         # classify using searched params
         #<FSVMCIL.LIN>
-        clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
         #</FSVMCIL.LIN>
 
         #<FSVMCIL.EXP>
         #clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
         #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
-        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
+        clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
         #</FSVMCIL.EXP>
 
         clf.fit(X, label, C=opt_C)
@@ -220,13 +217,34 @@ def procedure(dataname, dataset, ratio, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    seed = 0
-    ratio = [1,2,5,10,20,50,100]
-    raw_ratio = max(ratio)
-    N = 5000
-    dim = 5
-    var = np.sqrt(dim)
-    dataset = createTwoClassDataset([(var**2)*np.identity(dim)]*2, 2*var, N, raw_ratio, seed=0)
+    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
+    ecoli.raw = np.c_[ecoli.normalize(), ecoli.label]
+    procedure('ecoli', ecoli.raw, label_index=-1)
 
-    for r in ratio:
-        procedure("dim:%d, var:%.3f, ratio:%d" % (dim,var,r), dataset, r, nCV=5, label_index=0)
+    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+    transfusion.raw = np.c_[transfusion.normalize(), transfusion.label]
+    procedure('transfusion', transfusion.raw, label_index=-1)
+
+    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    haberman.raw = np.c_[haberman.normalize(), haberman.label]
+    procedure('haberman', haberman.raw, label_index=-1)
+
+    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    pima.raw = np.c_[pima.normalize(), pima.label]
+    procedure('pima', pima.raw, label_index=-1)
+
+    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+    yeast.raw = np.c_[yeast.normalize(), yeast.label]
+    procedure('yeast', yeast.raw, label_index=-1)
+
+    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+    page.raw = np.c_[page.normalize(), page.label]
+    procedure('page-block', page.raw, label_index=-1)
+
+    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+    abalone.raw = np.c_[abalone.normalize(), abalone.label]
+    procedure('abalone', abalone.raw, label_index=-1)
+
+    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+    waveform.raw = np.c_[waveform.normalize(), waveform.label]
+    procedure('waveform', waveform.raw, label_index=-1)
