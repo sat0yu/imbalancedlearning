@@ -33,7 +33,7 @@ def dist_from_center(X, label, class_label=[1,-1]):
 
     return (X, label, distance)
 
-def dist_from_estimated_hyperplane(X, label, beta, Y):
+def dist_from_estimated_hyperplane(X, label, beta):
     # sort given sample with their label
     dataset = np.c_[label, X]
     dataset = dataset[dataset[:,0].argsort()]
@@ -44,9 +44,7 @@ def dist_from_estimated_hyperplane(X, label, beta, Y):
     gram = kernel.gram(X)
     distance= np.dot(np.diag(label), np.dot(gram, label))
 
-    mat = kernel.matrix(Y,X)
-
-    return (X, label, gram, mat, distance)
+    return (X, label, gram, distance)
 
 def dist_from_hyperplane(X, label, beta, C=1.):
     # train conventional SVM
@@ -62,25 +60,35 @@ def dist_from_hyperplane(X, label, beta, C=1.):
 def multiproc(args):
     rough_C, gamma_list, beta, Y, answer, X, label = args
 
+    t_slice = float(0)
+
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
     #<FSVMCIL.CENTER>
-    X, label, distance = dist_from_center(X, label)
     kernel = GaussKernel(beta)
+    t_start = time.clock() #----- TIMER START -----
+    X, label, distance = dist_from_center(X, label)
     gram = kernel.gram(X)
+    t_slice += time.clock() - t_start #----- TIMER END -----
     mat = kernel.matrix(Y,X)
     #</FSVMCIL.CENTER>
 
     #<FSVMCIL.HYPERPLANE>
     #kernel = GaussKernel(beta)
+    #t_start = time.clock() #----- TIMER START -----
     #gram = kernel.gram(X)
+    #t_slice += time.clock() - t_start #----- TIMER END -----
     #mat = kernel.matrix(Y,X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
     #so we have to use gram matrix returned by that method at clf.fit()
     #<FSVMCIL.ESTIMATE>
-    #X, label, gram, mat, distance = dist_from_estimated_hyperplane(X, label, beta, Y)
+    #t_start = time.clock() #----- TIMER START -----
+    #X, label, gram, distance = dist_from_estimated_hyperplane(X, label, beta)
+    #t_slice += time.clock() - t_start #----- TIMER END -----
+    #kernel = GaussKernel(beta)
+    #mat = kernel.matrix(Y,X)
     #</FSVMCIL.ESTIMATE>
 
     res = []
@@ -89,7 +97,9 @@ def multiproc(args):
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
+        #t_start = time.clock() #----- TIMER START -----
         #distance = dist_from_hyperplane(X, label, beta, _C)
+        #t_slice += time.clock() - t_start #----- TIMER END -----
         #</FSVMCIL.HYPERPLANE>
 
         #<FSVMCIL.EXP>
@@ -98,7 +108,9 @@ def multiproc(args):
 #            clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
 #            clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 #
+#            t_start = time.clock() #----- TIMER START -----
 #            weight = clf.exp_decay_function(distance)
+#            t_slice += time.clock() - t_start #----- TIMER END -----
 #            clf.fit(X, label, C=_C, gram=gram, weight=weight)
 #
 #            predict = clf.predict(mat)
@@ -110,16 +122,21 @@ def multiproc(args):
         #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
         #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
 
+        t_start = time.clock() #----- TIMER START -----
         weight = clf.linear_decay_function(distance)
+        t_slice += time.clock() - t_start #----- TIMER END -----
         clf.fit(X, label, C=_C, gram=gram, weight=weight)
 
         predict = clf.predict(mat)
         res.append( (_C,)+evaluation(predict, answer) )
         #</FSVMCIL.LIN>
 
+    res.append(t_slice)
     return res
 
 def procedure(dataname, dataset, nCV=5, **kwargs):
+    t_slice = float(0)
+
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
@@ -143,6 +160,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         for beta in rough_beta:
             args = [ (rough_C, gamma_list, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
+
+            for i,r in enumerate(res):
+                res[i], t = r[:-1], r[-1]
+                t_slice += t
 
             #<FSVMCIL.LIN>
             res_foreach_dataset = np.array(res)
@@ -170,6 +191,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         for beta in [opt_beta*(10**i) for i in narrow_space]:
             args = [ (narrow_C, gamma_list, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
+
+            for i,r in enumerate(res):
+                res[i], t = r[:-1], r[-1]
+                t_slice += t
 
             #<FSVMCIL.LIN>
             res_foreach_dataset = np.array(res)
@@ -216,27 +241,57 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     _g = np.sqrt(accP * accN)
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
+    return t_slice
+
 if __name__ == '__main__':
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    procedure('ecoli', ecoli.raw, label_index=-1)
+#    setting="cen.exp"
+    setting="cen.lin"
+#    setting="est.exp"
+#    setting="est.lin"
+#    setting="hyp.exp"
+#    setting="hyp.lin"
+    with open("processing_time.%s.log" % setting, "w") as fp:
+        t_total_start = time.clock()
 
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    procedure('transfusion', transfusion.raw, label_index=-1)
+        ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
+        t = procedure('ecoli', ecoli.raw, label_index=-1)
+        fp.write('ecoli:%s\n' % t)
+        fp.flush()
 
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('haberman', haberman.raw, label_index=-1)
+        transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+        t = procedure('transfusion', transfusion.raw, label_index=-1)
+        fp.write('transfusion:%s\n' % t)
+        fp.flush()
 
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('pima', pima.raw, label_index=-1)
+        haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+        t = procedure('haberman', haberman.raw, label_index=-1)
+        fp.write('haberman:%s\n' % t)
+        fp.flush()
 
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    procedure('yeast', yeast.raw, label_index=-1)
+        pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+        t = procedure('pima', pima.raw, label_index=-1)
+        fp.write('pima:%s\n' % t)
+        fp.flush()
 
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    procedure('page-block', page.raw, label_index=-1)
+        yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+        t = procedure('yeast', yeast.raw, label_index=-1)
+        fp.write('yeast:%s\n' % t)
+        fp.flush()
 
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    procedure('abalone', abalone.raw, label_index=-1)
+        page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+        t = procedure('page-block', page.raw, label_index=-1)
+        fp.write('page-block:%s\n' % t)
+        fp.flush()
 
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    procedure('waveform', waveform.raw, label_index=-1)
+        abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+        t = procedure('abalone', abalone.raw, label_index=-1)
+        fp.write('abalone:%s\n' % t)
+        fp.flush()
+
+        waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+        t = procedure('waveform', waveform.raw, label_index=-1)
+        fp.write('waveform:%s\n' % t)
+        fp.flush()
+
+        t_total_end = time.clock()
+        fp.write('--- total:%s\n ---' % str(t_total_end - t_total_start))

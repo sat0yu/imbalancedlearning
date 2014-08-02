@@ -5,6 +5,7 @@ import sys
 from sklearn import svm
 from dataset import *
 import multiprocessing
+import time
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
@@ -15,43 +16,70 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
+    t_slice = float(0)
+
+    ## <SVM>
+    gk = GaussKernel(beta)
+    t_start = time.clock() #----- TIMER START -----
+    gram = gk.gram(X)
+    t_slice += time.clock() - t_start #----- TIMER END -----
+    mat = gk.matrix(Y,X)
+    ## </SVM>
+
     ## <Differenterrorcosts>
     #gk = GaussKernel(beta)
     #clf = DifferentErrorCosts(gk)
+    #t_start = time.clock() #----- TIMER START -----
     #gram = gk.gram(X)
+    #t_slice += time.clock() - t_start #----- TIMER END -----
     #mat = gk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
-    gk = GaussKernel(beta)
-    clf = KernelProbabilityFuzzySVM(gk)
-    X, gram, label, weight = clf.precompute(X, label)
-    mat = gk.matrix(Y,X)
+    #gk = GaussKernel(beta)
+    #clf = KernelProbabilityFuzzySVM(gk)
+    #t_start = time.clock() #----- TIMER START -----
+    #X, gram, label, weight = clf.precompute(X, label)
+    #t_slice += time.clock() - t_start #----- TIMER END -----
+    #mat = gk.matrix(Y,X)
     ## </Kernelprobabilityfuzzysvm>
+
 
     res = []
     for _C in rough_C:
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        clf.fit(X, label)
-        predict = clf.predict(Y)
+        t_start = time.clock() #----- TIMER START -----
+        # nothing to do for class imbalance
+        t_slice += time.clock() - t_start #----- TIMER END -----
+        clf = svm.SVC(kernel='precomputed', C=_C)
+        clf.fit(gram, label)
+        predict = clf.predict(mat)
         ## </SVM>
 
         ## <Differenterrorcosts>
+        #t_start = time.clock() #----- TIMER START -----
+        #clf.class_weight(label) # actually, this line is useless
+        #t_slice += time.clock() - t_start #----- TIMER END -----
         #clf.fit(X, label, C=_C, gram=gram)
         #predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        predict = clf.predict(mat, precomputed=True)
+        #t_start = time.clock() #----- TIMER START -----
+        # at here, nothing to do for class imbalance
+        #t_slice += time.clock() - t_start #----- TIMER END -----
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>
 
         res.append( (_C,)+evaluation(predict, answer) )
 
+    res.append(t_slice)
     return res
 
 def procedure(dataname, dataset, nCV=5, **kwargs):
+    t_slice = float(0)
+
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
@@ -75,6 +103,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
             args = [ (rough_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
 
+            for i,r in enumerate(res):
+                res[i], t = r[:-1], r[-1]
+                t_slice += t
+
             res_foreach_dataset = np.array(res)
             #print res_foreach_dataset.shape
             res_foreach_C = np.average(res_foreach_dataset, axis=0)
@@ -92,6 +124,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         for beta in [opt_beta*(10**i) for i in narrow_space]:
             args = [ (narrow_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
+
+            for i,r in enumerate(res):
+                res[i], t = r[:-1], r[-1]
+                t_slice += t
 
             res_foreach_dataset = np.array(res)
             #print res_foreach_dataset.shape
@@ -118,8 +154,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
-        clf.fit(X, label, C=opt_C)
+        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
         ## </Kernelprobabilityfuzzysvm>
 
         predict = clf.predict(Y)
@@ -132,35 +168,52 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     _g = np.sqrt(accP * accN)
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
+    return t_slice
+
 if __name__ == '__main__':
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    ecoli.raw = np.c_[ecoli.normalize(), ecoli.label]
-    procedure('ecoli', ecoli.raw, label_index=-1)
+    setting="svm"
+    with open("processing_time.%s.log" % setting, "w") as fp:
+        t_total_start = time.clock()
 
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    transfusion.raw = np.c_[transfusion.normalize(), transfusion.label]
-    procedure('transfusion', transfusion.raw, label_index=-1)
+        ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
+        t = procedure('ecoli', ecoli.raw, label_index=-1)
+        fp.write('ecoli:%s\n' % t)
+        fp.flush()
 
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    haberman.raw = np.c_[haberman.normalize(), haberman.label]
-    procedure('haberman', haberman.raw, label_index=-1)
+        transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+        t = procedure('transfusion', transfusion.raw, label_index=-1)
+        fp.write('transfusion:%s\n' % t)
+        fp.flush()
 
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    pima.raw = np.c_[pima.normalize(), pima.label]
-    procedure('pima', pima.raw, label_index=-1)
+        haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+        t = procedure('haberman', haberman.raw, label_index=-1)
+        fp.write('haberman:%s\n' % t)
+        fp.flush()
 
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    yeast.raw = np.c_[yeast.normalize(), yeast.label]
-    procedure('yeast', yeast.raw, label_index=-1)
+        pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+        t = procedure('pima', pima.raw, label_index=-1)
+        fp.write('pima:%s\n' % t)
+        fp.flush()
 
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    page.raw = np.c_[page.normalize(), page.label]
-    procedure('page-block', page.raw, label_index=-1)
+        yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+        t = procedure('yeast', yeast.raw, label_index=-1)
+        fp.write('yeast:%s\n' % t)
+        fp.flush()
 
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    abalone.raw = np.c_[abalone.normalize(), abalone.label]
-    procedure('abalone', abalone.raw, label_index=-1)
+        page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+        t = procedure('page-block', page.raw, label_index=-1)
+        fp.write('page-block:%s\n' % t)
+        fp.flush()
 
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    waveform.raw = np.c_[waveform.normalize(), waveform.label]
-    procedure('waveform', waveform.raw, label_index=-1)
+        abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+        t = procedure('abalone', abalone.raw, label_index=-1)
+        fp.write('abalone:%s\n' % t)
+        fp.flush()
+
+        waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+        t = procedure('waveform', waveform.raw, label_index=-1)
+        fp.write('waveform:%s\n' % t)
+        fp.flush()
+
+        t_total_end = time.clock()
+        fp.write('--- total:%s\n ---' % str(t_total_end - t_total_start))
