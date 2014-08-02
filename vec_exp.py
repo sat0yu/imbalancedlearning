@@ -23,16 +23,15 @@ def multiproc(args):
     t_start = time.clock() #----- TIMER START -----
     gram = gk.gram(X)
     t_slice += time.clock() - t_start #----- TIMER END -----
-    mat = gk.matrix(Y,X)
     ## </SVM>
 
     ## <Differenterrorcosts>
     #gk = GaussKernel(beta)
     #clf = DifferentErrorCosts(gk)
     #t_start = time.clock() #----- TIMER START -----
+    #clf.class_weight(label) # actually, this line is useless
     #gram = gk.gram(X)
     #t_slice += time.clock() - t_start #----- TIMER END -----
-    #mat = gk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
@@ -41,7 +40,6 @@ def multiproc(args):
     #t_start = time.clock() #----- TIMER START -----
     #X, gram, label, weight = clf.precompute(X, label)
     #t_slice += time.clock() - t_start #----- TIMER END -----
-    #mat = gk.matrix(Y,X)
     ## </Kernelprobabilityfuzzysvm>
 
 
@@ -51,25 +49,21 @@ def multiproc(args):
         t_start = time.clock() #----- TIMER START -----
         # nothing to do for class imbalance
         t_slice += time.clock() - t_start #----- TIMER END -----
-        clf = svm.SVC(kernel='precomputed', C=_C)
-        clf.fit(gram, label)
-        predict = clf.predict(mat)
+        predict = np.ones_like(answer)
         ## </SVM>
 
         ## <Differenterrorcosts>
         #t_start = time.clock() #----- TIMER START -----
-        #clf.class_weight(label) # actually, this line is useless
+        # at here, nothing to do for class imbalance
         #t_slice += time.clock() - t_start #----- TIMER END -----
-        #clf.fit(X, label, C=_C, gram=gram)
-        #predict = clf.predict(mat, precomputed=True)
+        #predict = np.ones_like(answer)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
         #t_start = time.clock() #----- TIMER START -----
         # at here, nothing to do for class imbalance
         #t_slice += time.clock() - t_start #----- TIMER END -----
-        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        #predict = clf.predict(mat, precomputed=True)
+        #predict = np.ones_like(answer)
         ## </Kernelprobabilityfuzzysvm>
 
         res.append( (_C,)+evaluation(predict, answer) )
@@ -141,24 +135,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         print "[narrow search] opt_beta:%s,\topt_C:%s,\tg:%f" % (opt_beta,opt_C,max_g)
         sys.stdout.flush()
 
-        # classify using searched params
-
-        ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
-        clf.fit(X, label)
-        ## </SVM>
-
-        ## <Differenterrorcosts>
-        #clf = DifferentErrorCosts( GaussKernel(opt_beta) )
-        #clf.fit(X, label, C=opt_C)
-        ## </Differenterrorcosts>
-
-        ## <Kernelprobabilityfuzzysvm>
-        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
-        #clf.fit(X, label, C=opt_C)
-        ## </Kernelprobabilityfuzzysvm>
-
-        predict = clf.predict(Y)
+        predict = np.ones_like(answer)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)

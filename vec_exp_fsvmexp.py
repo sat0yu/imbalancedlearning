@@ -5,6 +5,7 @@ import sys
 from sklearn import svm
 from dataset import *
 import multiprocessing
+import time
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
@@ -70,7 +71,6 @@ def multiproc(args):
     X, label, distance = dist_from_center(X, label)
     gram = kernel.gram(X)
     t_slice += time.clock() - t_start #----- TIMER END -----
-    mat = kernel.matrix(Y,X)
     #</FSVMCIL.CENTER>
 
     #<FSVMCIL.HYPERPLANE>
@@ -78,7 +78,6 @@ def multiproc(args):
     #t_start = time.clock() #----- TIMER START -----
     #gram = kernel.gram(X)
     #t_slice += time.clock() - t_start #----- TIMER END -----
-    #mat = kernel.matrix(Y,X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
@@ -87,8 +86,6 @@ def multiproc(args):
     #t_start = time.clock() #----- TIMER START -----
     #X, label, gram, distance = dist_from_estimated_hyperplane(X, label, beta)
     #t_slice += time.clock() - t_start #----- TIMER END -----
-    #kernel = GaussKernel(beta)
-    #mat = kernel.matrix(Y,X)
     #</FSVMCIL.ESTIMATE>
 
     res = []
@@ -111,9 +108,8 @@ def multiproc(args):
 #            t_start = time.clock() #----- TIMER START -----
 #            weight = clf.exp_decay_function(distance)
 #            t_slice += time.clock() - t_start #----- TIMER END -----
-#            clf.fit(X, label, C=_C, gram=gram, weight=weight)
 #
-#            predict = clf.predict(mat)
+#            predict = np.ones_like(answer)
 #            res.append( (_C,_g)+evaluation(predict, answer) )
         #</FSVMCIL.EXP>
 
@@ -125,9 +121,8 @@ def multiproc(args):
         t_start = time.clock() #----- TIMER START -----
         weight = clf.linear_decay_function(distance)
         t_slice += time.clock() - t_start #----- TIMER END -----
-        clf.fit(X, label, C=_C, gram=gram, weight=weight)
 
-        predict = clf.predict(mat)
+        predict = np.ones_like(answer)
         res.append( (_C,)+evaluation(predict, answer) )
         #</FSVMCIL.LIN>
 
@@ -217,21 +212,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         print "[narrow search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
 
-        # classify using searched params
-        #<FSVMCIL.LIN>
-        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
-        #</FSVMCIL.LIN>
-
-        #<FSVMCIL.EXP>
-#        clf = FSVMCIL(opt_beta, distance_function="center", decay_function="exp", gamma=opt_gamma)
-#        clf = FSVMCIL(opt_beta, distance_function="estimate", decay_function="exp", gamma=opt_gamma)
-#        clf = FSVMCIL(opt_beta, distance_function="hyperplane", decay_function="exp", gamma=opt_gamma)
-        #</FSVMCIL.EXP>
-
-        clf.fit(X, label, C=opt_C)
-        predict = clf.predict(Y)
+        predict = np.ones_like(answer)
         e = evaluation(predict, answer)
         print "[optimized] acc:%f,\taccP:%f,\taccN:%f,\tg:%f" % e
         scores.append(e)
