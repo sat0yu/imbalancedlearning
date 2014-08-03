@@ -20,49 +20,39 @@ def multiproc(args):
 
     ## <SVM>
     gk = GaussKernel(beta)
-    t_start = time.clock() #----- TIMER START -----
     gram = gk.gram(X)
-    t_slice += time.clock() - t_start #----- TIMER END -----
     ## </SVM>
 
     ## <Differenterrorcosts>
     #gk = GaussKernel(beta)
+    #gram = gk.gram(X)
     #clf = DifferentErrorCosts(gk)
     #t_start = time.clock() #----- TIMER START -----
     #clf.class_weight(label) # actually, this line is useless
-    #gram = gk.gram(X)
     #t_slice += time.clock() - t_start #----- TIMER END -----
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
     #gk = GaussKernel(beta)
     #clf = KernelProbabilityFuzzySVM(gk)
-    #t_start = time.clock() #----- TIMER START -----
-    #X, gram, label, weight = clf.precompute(X, label)
-    #t_slice += time.clock() - t_start #----- TIMER END -----
+    ##----- TIMER START -----
+    #X, gram, label, weight, t = clf.precompute(X, label)
+    #t_slice += t
+    ##----- TIMER END -----
     ## </Kernelprobabilityfuzzysvm>
 
 
     res = []
     for _C in rough_C:
         ## <SVM>
-        t_start = time.clock() #----- TIMER START -----
-        # nothing to do for class imbalance
-        t_slice += time.clock() - t_start #----- TIMER END -----
         predict = np.ones_like(answer)
         ## </SVM>
 
         ## <Differenterrorcosts>
-        #t_start = time.clock() #----- TIMER START -----
-        # at here, nothing to do for class imbalance
-        #t_slice += time.clock() - t_start #----- TIMER END -----
         #predict = np.ones_like(answer)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        #t_start = time.clock() #----- TIMER START -----
-        # at here, nothing to do for class imbalance
-        #t_slice += time.clock() - t_start #----- TIMER END -----
         #predict = np.ones_like(answer)
         ## </Kernelprobabilityfuzzysvm>
 

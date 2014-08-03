@@ -35,19 +35,34 @@ def dist_from_center(X, label, class_label=[1,-1]):
     return (X, label, distance)
 
 def dist_from_estimated_hyperplane(X, label, beta):
+    t_slice = float(0)
+
+    t_start = time.clock() #----- TIMER START -----
+
     # sort given sample with their label
     dataset = np.c_[label, X]
     dataset = dataset[dataset[:,0].argsort()]
     label, X = dataset[:,0], dataset[:,1:]
 
+    t_slice += time.clock() - t_start #----- TIMER END -----
+
     # calc. gram matrix and then sample_weight
     kernel = GaussKernel(beta)
     gram = kernel.gram(X)
+
+    t_start = time.clock() #----- TIMER START -----
+
     distance= np.dot(np.diag(label), np.dot(gram, label))
 
-    return (X, label, gram, distance)
+    t_slice += time.clock() - t_start #----- TIMER END -----
+
+    return (X, label, gram, distance, t_slice)
 
 def dist_from_hyperplane(X, label, beta, C=1.):
+    t_slice = float(0)
+
+    t_start = time.clock() #----- TIMER START -----
+
     # train conventional SVM
     clf = svm.SVC(kernel='rbf', gamma=beta, C=C)
     clf.fit(X, label)
@@ -56,7 +71,9 @@ def dist_from_hyperplane(X, label, beta, C=1.):
     value = (clf.decision_function(X))[:,0]
     distance = np.abs(value)
 
-    return distance
+    t_slice += time.clock() - t_start #----- TIMER END -----
+
+    return (distance, t_slice)
 
 def multiproc(args):
     rough_C, gamma_list, beta, Y, answer, X, label = args
@@ -69,23 +86,22 @@ def multiproc(args):
     kernel = GaussKernel(beta)
     t_start = time.clock() #----- TIMER START -----
     X, label, distance = dist_from_center(X, label)
-    gram = kernel.gram(X)
     t_slice += time.clock() - t_start #----- TIMER END -----
+    gram = kernel.gram(X)
     #</FSVMCIL.CENTER>
 
     #<FSVMCIL.HYPERPLANE>
     #kernel = GaussKernel(beta)
-    #t_start = time.clock() #----- TIMER START -----
     #gram = kernel.gram(X)
-    #t_slice += time.clock() - t_start #----- TIMER END -----
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
     #so we have to use gram matrix returned by that method at clf.fit()
     #<FSVMCIL.ESTIMATE>
-    #t_start = time.clock() #----- TIMER START -----
-    #X, label, gram, distance = dist_from_estimated_hyperplane(X, label, beta)
-    #t_slice += time.clock() - t_start #----- TIMER END -----
+    ##----- TIMER START -----
+    #X, label, gram, distance, t = dist_from_estimated_hyperplane(X, label, beta)
+    #t_slice += t
+    ##----- TIMER END -----
     #</FSVMCIL.ESTIMATE>
 
     res = []
@@ -94,9 +110,10 @@ def multiproc(args):
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
-        #t_start = time.clock() #----- TIMER START -----
-        #distance = dist_from_hyperplane(X, label, beta, _C)
-        #t_slice += time.clock() - t_start #----- TIMER END -----
+        ##----- TIMER START -----
+        #distance, t = dist_from_hyperplane(X, label, beta, _C)
+        #t_slice += t
+        ##----- TIMER END -----
         #</FSVMCIL.HYPERPLANE>
 
         #<FSVMCIL.EXP>
