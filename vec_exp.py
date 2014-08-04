@@ -21,9 +21,7 @@ def multiproc(args):
 
     ## <SVM>
     gk = GaussKernel(beta)
-    t_start = time.clock() #----- TIMER START -----
     gram = gk.gram(X)
-    t_slice += time.clock() - t_start #----- TIMER END -----
     mat = gk.matrix(Y,X)
     ## </SVM>
 
@@ -31,17 +29,19 @@ def multiproc(args):
     #gk = GaussKernel(beta)
     #clf = DifferentErrorCosts(gk)
     #t_start = time.clock() #----- TIMER START -----
-    #gram = gk.gram(X)
+    #clf.class_weight(label) # actually, this line is useless
     #t_slice += time.clock() - t_start #----- TIMER END -----
+    #gram = gk.gram(X)
     #mat = gk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
     #gk = GaussKernel(beta)
     #clf = KernelProbabilityFuzzySVM(gk)
-    #t_start = time.clock() #----- TIMER START -----
-    #X, gram, label, weight = clf.precompute(X, label)
-    #t_slice += time.clock() - t_start #----- TIMER END -----
+    ##----- TIMER START -----
+    #X, gram, label, weight, t = clf.precompute(X, label)
+    #t_slice += t
+    ##----- TIMER END -----
     #mat = gk.matrix(Y,X)
     ## </Kernelprobabilityfuzzysvm>
 
@@ -49,26 +49,17 @@ def multiproc(args):
     res = []
     for _C in rough_C:
         ## <SVM>
-        t_start = time.clock() #----- TIMER START -----
-        # nothing to do for class imbalance
-        t_slice += time.clock() - t_start #----- TIMER END -----
         clf = svm.SVC(kernel='precomputed', C=_C)
         clf.fit(gram, label)
         predict = clf.predict(mat)
         ## </SVM>
 
         ## <Differenterrorcosts>
-        #t_start = time.clock() #----- TIMER START -----
-        #clf.class_weight(label) # actually, this line is useless
-        #t_slice += time.clock() - t_start #----- TIMER END -----
         #clf.fit(X, label, C=_C, gram=gram)
         #predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        #t_start = time.clock() #----- TIMER START -----
-        # at here, nothing to do for class imbalance
-        #t_slice += time.clock() - t_start #----- TIMER END -----
         #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
         #predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>

@@ -3,6 +3,7 @@ import numpy as np
 cimport numpy as np
 
 from sklearn import svm
+import time
 
 from kernel import *
 from mlutil import *
@@ -66,6 +67,10 @@ class KernelProbabilityFuzzySVM(FloatKernel):
         return (cPos, cNeg)
 
     def precompute(self, sample, label, class_label=[1,-1]):
+        t_slice = float(0)
+
+        t_start = time.clock() #----- TIMER START -----
+
         # sort given sample by their label
         dataset = np.c_[label, sample]
         dataset = dataset[dataset[:,0].argsort()]
@@ -75,14 +80,21 @@ class KernelProbabilityFuzzySVM(FloatKernel):
         numPos = len(label[label[:]==class_label[0]])
         numNeg = len(label[label[:]==class_label[1]])
 
+        t_slice += ( time.clock() - t_start ) #----- TIMER END -----
+
         # calc. gram matrix and then sample_weight
         gram = self.kernel.gram(sample)
+
+        t_start = time.clock() #----- TIMER START -----
+
         nFront, nBack = (numNeg, numPos) if class_label[0] > class_label[1] else (numPos, numNeg)
         wFront = np.sum(gram[:nFront,:nFront], axis=0)
         wBack = np.sum(gram[nFront:,nFront:], axis=0)
         weight = np.r_[wFront / nFront, wBack / nBack]
 
-        return (sample, gram, label, weight)
+        t_slice += time.clock() - t_start #----- TIMER END -----
+
+        return (sample, gram, label, weight, t_slice)
 
     def fit(self, sample, label, C=1., class_label=[1,-1], gram=None, sample_weight=None):
         # equip weight of each class
