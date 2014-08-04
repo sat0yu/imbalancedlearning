@@ -5,6 +5,7 @@ import sys
 from sklearn import svm
 from dataset import *
 import multiprocessing
+import matplotlib.pyplot as plt
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
@@ -32,9 +33,9 @@ def multiproc(args):
     res = []
     for _C in rough_C:
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        clf.fit(X, label)
-        predict = clf.predict(Y)
+        #clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        #clf.fit(X, label)
+        #predict = clf.predict(Y)
         ## </SVM>
 
         ## <Differenterrorcosts>
@@ -108,8 +109,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         # classify using searched params
 
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
-        clf.fit(X, label)
+        #clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        #clf.fit(X, label)
         ## </SVM>
 
         ## <Differenterrorcosts>
@@ -133,34 +134,45 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    ecoli.raw = np.c_[ecoli.normalize(), ecoli.label]
-    procedure('ecoli', ecoli.raw, label_index=-1)
+    np.random.seed(0)
+    ratio = [1,2,5,10,20,50,100]
+    max_ratio = max(ratio)
 
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    transfusion.raw = np.c_[transfusion.normalize(), transfusion.label]
-    procedure('transfusion', transfusion.raw, label_index=-1)
+    # ----< create artificial dataset >-----
+    # the shape of this dataset is like below:
+    #         ++
+    #   +  x  ++  x  +
+    #   +  x  ++  x  +
+    #         ++
+    N = 5000
+    nNeg = int(max_ratio * (N / (1. + max_ratio)))
+    nPos = N - nNeg
+    nPosInLeft = int(nPos / 2.)
+    nPosInRight = nPos - nPosInLeft
+    nNegCen = int(nNeg / 2.)
+    nNegOutLeft = int((nNeg - nNegCen) / 2.)
+    nNegOutRight = nNeg - nNegCen - nNegOutLeft
+    dim = 2
+    side_var = np.array([[ 0.25, 0.0 ],
+                        [ 0.0, 0.5 ]])
+    center_var = np.array([[ 0.5, 0.0 ],
+                            [ 0.0, 1.0 ]])
+    innerWidth, outerWidth = 1.5, 3
+    center     = (NormalDistribution(np.zeros(dim), center_var)).create(nNegCen)
+    innerLeft  = (NormalDistribution([-1 * innerWidth, 0], side_var)).create(nPosInLeft)
+    innerRight = (NormalDistribution([innerWidth, 0], side_var)).create(nPosInRight)
+    outerLeft  = (NormalDistribution([-1 * outerWidth, 0], side_var)).create(nNegOutLeft)
+    outerRight = (NormalDistribution([outerWidth, 0], side_var)).create(nNegOutRight)
+    data = np.r_[center, outerLeft, outerRight, innerLeft, innerRight]
+    label = np.array([-1,]*nNeg + [1,]*nPos)
+    raw_dataset = np.c_[data, label]
+    np.random.shuffle(raw_dataset)
+#    print raw_dataset[-100:]
+#    plt.scatter(raw_dataset[raw_dataset[:,2]==-1,0], raw_dataset[raw_dataset[:,2]==-1,1], c='b')
+#    plt.scatter(raw_dataset[raw_dataset[:,2]==1,0], raw_dataset[raw_dataset[:,2]==1,1], c='r')
+#    plt.show()
+    # ----</ create artificial dataset >-----
 
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    haberman.raw = np.c_[haberman.normalize(), haberman.label]
-    procedure('haberman', haberman.raw, label_index=-1)
-
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    pima.raw = np.c_[pima.normalize(), pima.label]
-    procedure('pima', pima.raw, label_index=-1)
-
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    yeast.raw = np.c_[yeast.normalize(), yeast.label]
-    procedure('yeast', yeast.raw, label_index=-1)
-
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    page.raw = np.c_[page.normalize(), page.label]
-    procedure('page-block', page.raw, label_index=-1)
-
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    abalone.raw = np.c_[abalone.normalize(), abalone.label]
-    procedure('abalone', abalone.raw, label_index=-1)
-
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    waveform.raw = np.c_[waveform.normalize(), waveform.label]
-    procedure('waveform', waveform.raw, label_index=-1)
+    for r in ratio:
+        dataset = createImbalanceClassDataset(raw_dataset, r, label_index=-1)
+        procedure("ratio:%d" % r, dataset, label_index=-1)
