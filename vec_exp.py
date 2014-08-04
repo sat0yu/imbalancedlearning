@@ -6,6 +6,7 @@ from sklearn import svm
 from dataset import *
 import multiprocessing
 import matplotlib.pyplot as plt
+import time
 
 import pyximport
 pyximport.install(setup_args={'include_dirs':[np.get_include()]}, inplace=True)
@@ -16,43 +17,70 @@ from cil import *
 def multiproc(args):
     rough_C, beta, Y, answer, X, label = args
 
+    t_slice = float(0)
+
+    ## <SVM>
+    gk = GaussKernel(beta)
+    t_start = time.clock() #----- TIMER START -----
+    gram = gk.gram(X)
+    t_slice += time.clock() - t_start #----- TIMER END -----
+    mat = gk.matrix(Y,X)
+    ## </SVM>
+
     ## <Differenterrorcosts>
     #gk = GaussKernel(beta)
     #clf = DifferentErrorCosts(gk)
+    #t_start = time.clock() #----- TIMER START -----
     #gram = gk.gram(X)
+    #t_slice += time.clock() - t_start #----- TIMER END -----
     #mat = gk.matrix(Y,X)
     ## </Differenterrorcosts>
 
     ## <Kernelprobabilityfuzzysvm>
-    gk = GaussKernel(beta)
-    clf = KernelProbabilityFuzzySVM(gk)
-    X, gram, label, weight = clf.precompute(X, label)
-    mat = gk.matrix(Y,X)
+    #gk = GaussKernel(beta)
+    #clf = KernelProbabilityFuzzySVM(gk)
+    #t_start = time.clock() #----- TIMER START -----
+    #X, gram, label, weight = clf.precompute(X, label)
+    #t_slice += time.clock() - t_start #----- TIMER END -----
+    #mat = gk.matrix(Y,X)
     ## </Kernelprobabilityfuzzysvm>
+
 
     res = []
     for _C in rough_C:
         ## <SVM>
-        #clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        #clf.fit(X, label)
-        #predict = clf.predict(Y)
+        t_start = time.clock() #----- TIMER START -----
+        # nothing to do for class imbalance
+        t_slice += time.clock() - t_start #----- TIMER END -----
+        clf = svm.SVC(kernel='precomputed', C=_C)
+        clf.fit(gram, label)
+        predict = clf.predict(mat)
         ## </SVM>
 
         ## <Differenterrorcosts>
+        #t_start = time.clock() #----- TIMER START -----
+        #clf.class_weight(label) # actually, this line is useless
+        #t_slice += time.clock() - t_start #----- TIMER END -----
         #clf.fit(X, label, C=_C, gram=gram)
         #predict = clf.predict(mat, precomputed=True)
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
-        predict = clf.predict(mat, precomputed=True)
+        #t_start = time.clock() #----- TIMER START -----
+        # at here, nothing to do for class imbalance
+        #t_slice += time.clock() - t_start #----- TIMER END -----
+        #clf.fit(X, label, C=_C, gram=gram, sample_weight=weight)
+        #predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>
 
         res.append( (_C,)+evaluation(predict, answer) )
 
+    res.append(t_slice)
     return res
 
 def procedure(dataname, dataset, nCV=5, **kwargs):
+    t_slice = float(0)
+
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     rough_beta = [10**i for i in range(-9,1)]
@@ -76,6 +104,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
             args = [ (rough_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
 
+            for i,r in enumerate(res):
+                res[i], t = r[:-1], r[-1]
+                t_slice += t
+
             res_foreach_dataset = np.array(res)
             #print res_foreach_dataset.shape
             res_foreach_C = np.average(res_foreach_dataset, axis=0)
@@ -93,6 +125,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         for beta in [opt_beta*(10**i) for i in narrow_space]:
             args = [ (narrow_C, beta) + elem for elem in dataset_iterator(pseudo, nCV) ]
             res = pool.map(multiproc, args)
+
+            for i,r in enumerate(res):
+                res[i], t = r[:-1], r[-1]
+                t_slice += t
 
             res_foreach_dataset = np.array(res)
             #print res_foreach_dataset.shape
@@ -119,8 +155,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         ## </Differenterrorcosts>
 
         ## <Kernelprobabilityfuzzysvm>
-        clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
-        clf.fit(X, label, C=opt_C)
+        #clf = KernelProbabilityFuzzySVM( GaussKernel(opt_beta) )
+        #clf.fit(X, label, C=opt_C)
         ## </Kernelprobabilityfuzzysvm>
 
         predict = clf.predict(Y)
@@ -132,6 +168,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     acc, accP, accN, g = np.average(np.array(scores), axis=0)
     _g = np.sqrt(accP * accN)
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
+
+    return t_slice
 
 if __name__ == '__main__':
     np.random.seed(0)
@@ -173,6 +211,8 @@ if __name__ == '__main__':
 #    plt.show()
     # ----</ create artificial dataset >-----
 
+    setting = "svm"
     for r in ratio:
         dataset = createImbalanceClassDataset(raw_dataset, r, label_index=-1)
-        procedure("ratio:%d" % r, dataset, label_index=-1)
+        t = procedure("ratio:%d" % r, dataset, label_index=-1)
+        print "method:%s, ratio:%s, processing time:%s" % (setting, r, t)
