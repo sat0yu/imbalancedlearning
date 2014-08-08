@@ -20,3 +20,5 @@ sed 's/,[12]$/,-1/g' $PATH_TO_DIR/waveform.data | sed 's/,0$/,1/g' > $PATH_TO_DI
 sed 's/,0$/,-1/g' $PATH_TO_DIR/pima-indians-diabetes.data > $PATH_TO_DIR/pima-indians-diabetes.rplcd
 
 sed 's/^ham/-1/g' $PATH_TO_DIR/SMSSpamCollection | sed 's/^spam/1/g' > $PATH_TO_DIR/SMSSpamCollection.rplcd
+
+sed $PATH_TO_DIR/satimage.data -e 's/ [123567]$/ -1/g' -e 's/ 4$/ 1/g' > $PATH_TO_DIR/satimage.rplcd

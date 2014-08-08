@@ -142,44 +142,49 @@ if __name__ == '__main__':
     with open("processing_time.%s.log" % setting, "w") as fp:
         t_total_start = time.clock()
 
-        ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-        t = procedure('ecoli', ecoli.raw, label_index=-1)
-        fp.write('ecoli:%s\n' % t)
-        fp.flush()
-
-        transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-        t = procedure('transfusion', transfusion.raw, label_index=-1)
-        fp.write('transfusion:%s\n' % t)
-        fp.flush()
-
-        haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-        t = procedure('haberman', haberman.raw, label_index=-1)
-        fp.write('haberman:%s\n' % t)
-        fp.flush()
-
-        pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-        t = procedure('pima', pima.raw, label_index=-1)
-        fp.write('pima:%s\n' % t)
-        fp.flush()
-
-        yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-        t = procedure('yeast', yeast.raw, label_index=-1)
-        fp.write('yeast:%s\n' % t)
-        fp.flush()
-
-        page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-        t = procedure('page-block', page.raw, label_index=-1)
-        fp.write('page-block:%s\n' % t)
-        fp.flush()
-
-        abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-        t = procedure('abalone', abalone.raw, label_index=-1)
-        fp.write('abalone:%s\n' % t)
-        fp.flush()
-
-        waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-        t = procedure('waveform', waveform.raw, label_index=-1)
-        fp.write('waveform:%s\n' % t)
+#        ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
+#        t = procedure('ecoli', ecoli.raw, label_index=-1)
+#        fp.write('ecoli:%s\n' % t)
+#        fp.flush()
+#
+#        transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
+#        t = procedure('transfusion', transfusion.raw, label_index=-1)
+#        fp.write('transfusion:%s\n' % t)
+#        fp.flush()
+#
+#        haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+#        t = procedure('haberman', haberman.raw, label_index=-1)
+#        fp.write('haberman:%s\n' % t)
+#        fp.flush()
+#
+#        pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+#        t = procedure('pima', pima.raw, label_index=-1)
+#        fp.write('pima:%s\n' % t)
+#        fp.flush()
+#
+#        yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
+#        t = procedure('yeast', yeast.raw, label_index=-1)
+#        fp.write('yeast:%s\n' % t)
+#        fp.flush()
+#
+#        page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
+#        t = procedure('page-block', page.raw, label_index=-1)
+#        fp.write('page-block:%s\n' % t)
+#        fp.flush()
+#
+#        abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
+#        t = procedure('abalone', abalone.raw, label_index=-1)
+#        fp.write('abalone:%s\n' % t)
+#        fp.flush()
+#
+#        waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
+#        t = procedure('waveform', waveform.raw, label_index=-1)
+#        fp.write('waveform:%s\n' % t)
+#        fp.flush()
+#
+        satimage = Dataset("data/satimage.rplcd", label_index=-1, delimiter=' ', dtype=np.float)
+        t = procedure('satimage', satimage.raw, label_index=-1)
+        fp.write('satimage:%s\n' % t)
         fp.flush()
 
         t_total_end = time.clock()
