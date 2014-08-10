@@ -206,3 +206,29 @@ waveform(4/5): test samples (pos:333, neg:671)
 [narrow search] opt_beta:1e-05,	opt_C:1000000.0,	opt_gamma:0.0,	g:0.856323
 [optimized] acc:0.896414,	accP:0.762763,	accN:0.962742,	g:0.856939
 [waveform]: acc:0.894798,	accP:0.758595,	accN:0.962309,	g:0.854343,	g_from_ave.:0.854402
+satimage(0/5): train samples (pos:501, neg:4648)
+satimage(0/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	opt_gamma:0.0,	g:0.743193
+[narrow search] opt_beta:0.00056234132519,	opt_C:316.227766017,	opt_gamma:0.0,	g:0.746445
+[optimized] acc:0.932348,	accP:0.616000,	accN:0.966408,	g:0.771562
+satimage(1/5): train samples (pos:501, neg:4648)
+satimage(1/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	opt_gamma:0.0,	g:0.795442
+[narrow search] opt_beta:0.00056234132519,	opt_C:562.34132519,	opt_gamma:0.0,	g:0.796951
+[optimized] acc:0.902799,	accP:0.320000,	accN:0.965547,	g:0.555855
+satimage(2/5): train samples (pos:501, neg:4648)
+satimage(2/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	opt_gamma:0.0,	g:0.732868
+[narrow search] opt_beta:0.00056234132519,	opt_C:1778.27941004,	opt_gamma:0.0,	g:0.752179
+[optimized] acc:0.953344,	accP:0.688000,	accN:0.981912,	g:0.821922
+satimage(3/5): train samples (pos:501, neg:4648)
+satimage(3/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	opt_gamma:0.0,	g:0.718932
+[narrow search] opt_beta:0.00056234132519,	opt_C:562.34132519,	opt_gamma:0.0,	g:0.726820
+[optimized] acc:0.928460,	accP:0.624000,	accN:0.961240,	g:0.774477
+satimage(4/5): train samples (pos:500, neg:4644)
+satimage(4/5): test samples (pos:126, neg:1165)
+[rough search] opt_beta:0.0001,	opt_C:100000.0,	opt_gamma:0.0,	g:0.717275
+[narrow search] opt_beta:0.0001,	opt_C:31622.7766017,	opt_gamma:0.0,	g:0.720144
+[optimized] acc:0.928737,	accP:0.722222,	accN:0.951073,	g:0.828786
+[satimage]: acc:0.929138,	accP:0.594044,	accN:0.965236,	g:0.750520,	g_from_ave.:0.757227

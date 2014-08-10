@@ -83,16 +83,16 @@ def multiproc(args):
     #dist_from_center() rearrange the order of samples.
     #so we have to use gram matrix caluclated after rearrangement
     #<FSVMCIL.CENTER>
-    #kernel = GaussKernel(beta)
-    #t_start = time.clock() #----- TIMER START -----
-    #X, label, distance = dist_from_center(X, label)
-    #t_slice += time.clock() - t_start #----- TIMER END -----
-    #gram = kernel.gram(X)
+    kernel = GaussKernel(beta)
+    t_start = time.clock() #----- TIMER START -----
+    X, label, distance = dist_from_center(X, label)
+    t_slice += time.clock() - t_start #----- TIMER END -----
+    gram = kernel.gram(X)
     #</FSVMCIL.CENTER>
 
     #<FSVMCIL.HYPERPLANE>
-    kernel = GaussKernel(beta)
-    gram = kernel.gram(X)
+    #kernel = GaussKernel(beta)
+    #gram = kernel.gram(X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
@@ -111,24 +111,23 @@ def multiproc(args):
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
         ##----- TIMER START -----
-        distance, t = dist_from_hyperplane(X, label, beta, _C)
-        t_slice += t
+        #distance, t = dist_from_hyperplane(X, label, beta, _C)
+        #t_slice += t
         ##----- TIMER END -----
         #</FSVMCIL.HYPERPLANE>
 
-        #<FSVMCIL.EXP>
-        for _g in gamma_list:
-            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
-            #clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
-            clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
+        #<FSVMCIL.LIN>
+        clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
 
-            t_start = time.clock() #----- TIMER START -----
-            weight = clf.exp_decay_function(distance)
-            t_slice += time.clock() - t_start #----- TIMER END -----
+        t_start = time.clock() #----- TIMER START -----
+        weight = clf.linear_decay_function(distance)
+        t_slice += time.clock() - t_start #----- TIMER END -----
 
-            predict = np.ones_like(answer)
-            res.append( (_C,_g)+evaluation(predict, answer) )
-        #</FSVMCIL.EXP>
+        predict = np.ones_like(answer)
+        res.append( (_C,)+evaluation(predict, answer) )
+        #</FSVMCIL.LIN>
 
     res.append(t_slice)
     return res
@@ -164,14 +163,14 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
                 res[i], t = r[:-1], r[-1]
                 t_slice += t
 
-            #<FSVMCIL.EXP>
+            #<FSVMCIL.LIN>
             res_foreach_dataset = np.array(res)
-            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
-            #</FSVMCIL.EXP>
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+            #</FSVMCIL.LIN>
 
         print "[rough search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
@@ -186,14 +185,14 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
                 res[i], t = r[:-1], r[-1]
                 t_slice += t
 
-            #<FSVMCIL.EXP>
+            #<FSVMCIL.LIN>
             res_foreach_dataset = np.array(res)
-            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
+            res_foreach_C = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
+            for _C, _acc, _accP, _accN, _g in res_foreach_C:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
-            #</FSVMCIL.EXP>
+                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
+            #</FSVMCIL.LIN>
 
         print "[narrow search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
@@ -212,10 +211,10 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 
 if __name__ == '__main__':
 #    setting="cen.exp"
-#    setting="cen.lin"
+    setting="cen.lin"
 #    setting="est.exp"
 #    setting="est.lin"
-    setting="hyp.exp"
+#    setting="hyp.exp"
 #    setting="hyp.lin"
     with open("processing_time.%s.log" % setting, "w") as fp:
         t_total_start = time.clock()
@@ -258,6 +257,11 @@ if __name__ == '__main__':
         waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
         t = procedure('waveform', waveform.raw, label_index=-1)
         fp.write('waveform:%s\n' % t)
+        fp.flush()
+
+        satimage = Dataset("data/satimage.rplcd", label_index=-1, delimiter=' ', dtype=np.float)
+        t = procedure('satimage', satimage.raw, label_index=-1)
+        fp.write('satimage:%s\n' % t)
         fp.flush()
 
         t_total_end = time.clock()

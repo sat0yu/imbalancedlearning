@@ -206,3 +206,29 @@ waveform(4/5): test samples (pos:333, neg:671)
 [narrow search] opt_beta:0.0177827941004,	opt_C:1.77827941004,	opt_gamma:0.1,	g:0.895319
 [optimized] acc:0.875498,	accP:0.894895,	accN:0.865872,	g:0.880264
 [waveform]: acc:0.875000,	accP:0.910701,	accN:0.857306,	g:0.883483,	g_from_ave.:0.883600
+satimage(0/5): train samples (pos:501, neg:4648)
+satimage(0/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:100.0,	opt_gamma:0.1,	g:0.819357
+[narrow search] opt_beta:0.001,	opt_C:177.827941004,	opt_gamma:0.1,	g:0.825363
+[optimized] acc:0.583981,	accP:0.888000,	accN:0.551249,	g:0.699649
+satimage(1/5): train samples (pos:501, neg:4648)
+satimage(1/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.0001,	opt_C:10000.0,	opt_gamma:0.1,	g:0.859110
+[narrow search] opt_beta:0.000177827941004,	opt_C:5623.4132519,	opt_gamma:0.1,	g:0.871525
+[optimized] acc:0.724728,	accP:0.688000,	accN:0.728682,	g:0.708049
+satimage(2/5): train samples (pos:501, neg:4648)
+satimage(2/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	opt_gamma:0.1,	g:0.784074
+[narrow search] opt_beta:0.00056234132519,	opt_C:5623.4132519,	opt_gamma:0.1,	g:0.790268
+[optimized] acc:0.914463,	accP:0.792000,	accN:0.927649,	g:0.857145
+satimage(3/5): train samples (pos:501, neg:4648)
+satimage(3/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:1e-06,	opt_C:100000000.0,	opt_gamma:0.1,	g:0.791103
+[narrow search] opt_beta:3.16227766017e-07,	opt_C:562341325.19,	opt_gamma:0.1,	g:0.807603
+[optimized] acc:0.822706,	accP:0.872000,	accN:0.817399,	g:0.844258
+satimage(4/5): train samples (pos:500, neg:4644)
+satimage(4/5): test samples (pos:126, neg:1165)
+[rough search] opt_beta:1e-06,	opt_C:100000000.0,	opt_gamma:0.1,	g:0.764145
+[narrow search] opt_beta:3.16227766017e-07,	opt_C:562341325.19,	opt_gamma:0.1,	g:0.796700
+[optimized] acc:0.813323,	accP:0.912698,	accN:0.802575,	g:0.855867
+[satimage]: acc:0.771840,	accP:0.830540,	accN:0.765511,	g:0.792994,	g_from_ave.:0.797363

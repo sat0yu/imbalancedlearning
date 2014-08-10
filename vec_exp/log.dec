@@ -206,3 +206,29 @@ waveform(4/5): test samples (pos:333, neg:671)
 [narrow search] opt_beta:1e-05,	opt_C:562341.32519,	g:0.855558
 [optimized] acc:0.892430,	accP:0.756757,	accN:0.959762,	g:0.852236
 [waveform]: acc:0.893801,	accP:0.756789,	accN:0.961713,	g:0.853082,	g_from_ave.:0.853120
+satimage(0/5): train samples (pos:501, neg:4648)
+satimage(0/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	g:0.743193
+[narrow search] opt_beta:0.00056234132519,	opt_C:177.827941004,	g:0.747900
+[optimized] acc:0.929238,	accP:0.608000,	accN:0.963824,	g:0.765510
+satimage(1/5): train samples (pos:501, neg:4648)
+satimage(1/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	g:0.795442
+[narrow search] opt_beta:0.00056234132519,	opt_C:1778.27941004,	g:0.796798
+[optimized] acc:0.901244,	accP:0.328000,	accN:0.962963,	g:0.562007
+satimage(2/5): train samples (pos:501, neg:4648)
+satimage(2/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	g:0.732868
+[narrow search] opt_beta:0.00056234132519,	opt_C:1778.27941004,	g:0.752179
+[optimized] acc:0.953344,	accP:0.688000,	accN:0.981912,	g:0.821922
+satimage(3/5): train samples (pos:501, neg:4648)
+satimage(3/5): test samples (pos:125, neg:1161)
+[rough search] opt_beta:0.001,	opt_C:1000.0,	g:0.718932
+[narrow search] opt_beta:0.00056234132519,	opt_C:1000.0,	g:0.725430
+[optimized] acc:0.927683,	accP:0.624000,	accN:0.960379,	g:0.774130
+satimage(4/5): train samples (pos:500, neg:4644)
+satimage(4/5): test samples (pos:126, neg:1165)
+[rough search] opt_beta:0.0001,	opt_C:100000.0,	g:0.717275
+[narrow search] opt_beta:0.0001,	opt_C:31622.7766017,	g:0.720144
+[optimized] acc:0.927963,	accP:0.714286,	accN:0.951073,	g:0.824220
+[satimage]: acc:0.927894,	accP:0.592457,	accN:0.964030,	g:0.749558,	g_from_ave.:0.755742

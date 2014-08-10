@@ -116,18 +116,19 @@ def multiproc(args):
         ##----- TIMER END -----
         #</FSVMCIL.HYPERPLANE>
 
-        #<FSVMCIL.LIN>
-        #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-        clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+        #<FSVMCIL.EXP>
+        for _g in gamma_list:
+            #clf = FSVMCIL(beta, distance_function="center", decay_function="exp", gamma=_g)
+            clf = FSVMCIL(beta, distance_function="estimate", decay_function="exp", gamma=_g)
+            #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="exp", gamma=_g)
 
-        t_start = time.clock() #----- TIMER START -----
-        weight = clf.linear_decay_function(distance)
-        t_slice += time.clock() - t_start #----- TIMER END -----
+            t_start = time.clock() #----- TIMER START -----
+            weight = clf.exp_decay_function(distance)
+            t_slice += time.clock() - t_start #----- TIMER END -----
 
-        predict = np.ones_like(answer)
-        res.append( (_C,)+evaluation(predict, answer) )
-        #</FSVMCIL.LIN>
+            predict = np.ones_like(answer)
+            res.append( (_C,_g)+evaluation(predict, answer) )
+        #</FSVMCIL.EXP>
 
     res.append(t_slice)
     return res
@@ -163,14 +164,14 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
                 res[i], t = r[:-1], r[-1]
                 t_slice += t
 
-            #<FSVMCIL.LIN>
+            #<FSVMCIL.EXP>
             res_foreach_dataset = np.array(res)
-            res_foreach_C = np.average(res_foreach_dataset, axis=0)
+            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
-            #</FSVMCIL.LIN>
+                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+            #</FSVMCIL.EXP>
 
         print "[rough search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
@@ -185,14 +186,14 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
                 res[i], t = r[:-1], r[-1]
                 t_slice += t
 
-            #<FSVMCIL.LIN>
+            #<FSVMCIL.EXP>
             res_foreach_dataset = np.array(res)
-            res_foreach_C = np.average(res_foreach_dataset, axis=0)
+            res_foreach_C_gamma = np.average(res_foreach_dataset, axis=0)
 
-            for _C, _acc, _accP, _accN, _g in res_foreach_C:
+            for _C, _gamma, _acc, _accP, _accN, _g in res_foreach_C_gamma:
                 _g = np.sqrt(_accP * _accN)
-                if _g > max_g: max_g, opt_C, opt_beta = _g, _C, beta
-            #</FSVMCIL.LIN>
+                if _g > max_g: max_g, opt_C, opt_gamma, opt_beta  = _g, _C, _gamma, beta
+            #</FSVMCIL.EXP>
 
         print "[narrow search] opt_beta:%s,\topt_C:%s,\topt_gamma:%s,\tg:%f" % (opt_beta,opt_C,opt_gamma,max_g)
         sys.stdout.flush()
@@ -212,8 +213,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
 if __name__ == '__main__':
 #    setting="cen.exp"
 #    setting="cen.lin"
-#    setting="est.exp"
-    setting="est.lin"
+    setting="est.exp"
+#    setting="est.lin"
 #    setting="hyp.exp"
 #    setting="hyp.lin"
     with open("processing_time.%s.log" % setting, "w") as fp:
@@ -257,6 +258,11 @@ if __name__ == '__main__':
         waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
         t = procedure('waveform', waveform.raw, label_index=-1)
         fp.write('waveform:%s\n' % t)
+        fp.flush()
+
+        satimage = Dataset("data/satimage.rplcd", label_index=-1, delimiter=' ', dtype=np.float)
+        t = procedure('satimage', satimage.raw, label_index=-1)
+        fp.write('satimage:%s\n' % t)
         fp.flush()
 
         t_total_end = time.clock()

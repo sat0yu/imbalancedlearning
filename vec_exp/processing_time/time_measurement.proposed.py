@@ -160,5 +160,10 @@ if __name__ == '__main__':
         fp.write('waveform:%s\n' % t)
         fp.flush()
 
+        satimage = Dataset("data/satimage.rplcd", label_index=-1, delimiter=' ', dtype=np.float)
+        t = procedure('satimage', satimage.raw, label_index=-1)
+        fp.write('satimage:%s\n' % t)
+        fp.flush()
+
         t_total_end = time.clock()
         fp.write('--- total:%s\n ---' % str(t_total_end - t_total_start))

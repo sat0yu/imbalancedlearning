@@ -91,17 +91,17 @@ def multiproc(args):
     #</FSVMCIL.CENTER>
 
     #<FSVMCIL.HYPERPLANE>
-    kernel = GaussKernel(beta)
-    gram = kernel.gram(X)
+    #kernel = GaussKernel(beta)
+    #gram = kernel.gram(X)
     #</FSVMCIL.HYPERPLANE>
 
     #dist_from_estimated_hyperplane() rearrange the order of samples.
     #so we have to use gram matrix returned by that method at clf.fit()
     #<FSVMCIL.ESTIMATE>
-    ##----- TIMER START -----
-    #X, label, gram, distance, t = dist_from_estimated_hyperplane(X, label, beta)
-    #t_slice += t
-    ##----- TIMER END -----
+    #----- TIMER START -----
+    X, label, gram, distance, t = dist_from_estimated_hyperplane(X, label, beta)
+    t_slice += t
+    #----- TIMER END -----
     #</FSVMCIL.ESTIMATE>
 
     res = []
@@ -110,16 +110,16 @@ def multiproc(args):
         #dist_from_hyperplane() doesn't rearange the order of samples,
         #so we can use gram matrix calculated above at clf.fit().
         #<FSVMCIL.HYPERPLANE>
-        #----- TIMER START -----
-        distance, t = dist_from_hyperplane(X, label, beta, _C)
-        t_slice += t
-        #----- TIMER END -----
+        ##----- TIMER START -----
+        #distance, t = dist_from_hyperplane(X, label, beta, _C)
+        #t_slice += t
+        ##----- TIMER END -----
         #</FSVMCIL.HYPERPLANE>
 
         #<FSVMCIL.LIN>
         #clf = FSVMCIL(beta, distance_function="center", decay_function="linear", delta=0.000001)
-        #clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
-        clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
+        clf = FSVMCIL(beta, distance_function="estimate", decay_function="linear", delta=0.000001)
+        #clf = FSVMCIL(beta, distance_function="hyperplane", decay_function="linear", delta=0.000001)
 
         t_start = time.clock() #----- TIMER START -----
         weight = clf.linear_decay_function(distance)
@@ -213,9 +213,9 @@ if __name__ == '__main__':
 #    setting="cen.exp"
 #    setting="cen.lin"
 #    setting="est.exp"
-#    setting="est.lin"
+    setting="est.lin"
 #    setting="hyp.exp"
-    setting="hyp.lin"
+#    setting="hyp.lin"
     with open("processing_time.%s.log" % setting, "w") as fp:
         t_total_start = time.clock()
 
@@ -257,6 +257,11 @@ if __name__ == '__main__':
         waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
         t = procedure('waveform', waveform.raw, label_index=-1)
         fp.write('waveform:%s\n' % t)
+        fp.flush()
+
+        satimage = Dataset("data/satimage.rplcd", label_index=-1, delimiter=' ', dtype=np.float)
+        t = procedure('satimage', satimage.raw, label_index=-1)
+        fp.write('satimage:%s\n' % t)
         fp.flush()
 
         t_total_end = time.clock()
