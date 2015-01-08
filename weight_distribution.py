@@ -29,8 +29,18 @@ def convert2monogradation(X, RGB='R', alpha=1.):
 
     return RGBA
 
+def circleDist(mu, var, num):
+    R = np.random.normal(mu, var, num)
+    PHI = np.random.uniform(0, 2*np.pi, num)
+    D = np.zeros((num,2))
+    for i,(r,p) in enumerate(zip(R,PHI)):
+        D[i][0] = r * np.sin(p)
+        D[i][1] = r * np.cos(p)
+    return np.array(D)
+
 def regularize(X):
-    return np.array([ i / float(max(X)) for i in (X[:] - min(X)) ])
+    maxX, minX = max(X), min(X)
+    return np.array([ i / float(maxX - minX) for i in (X[:] - minX) ])
 
 if __name__ == '__main__':
     # initialize random seed
@@ -39,65 +49,43 @@ if __name__ == '__main__':
     # parameter settings
     rect = [-4,4,-4,4]
     beta = 1.
-    delta = 10.**-6
     alpha = 0.70
     linewidths = 0.4
-    scale = 100
+    scale = 10
 
     #create NEG_X
-    nPosData1 = 180
-    nPosData2 = 320
-
-    mean1 = [0., 0.]
-    cov1 = [[1.,0.],[0., 1.]]
-    mean2 = [-2.5, -2.5]
-    mean3 = [2.5, -2.5]
-    mean4 = [-2.5, 2.5]
-    mean5 = [2.5, 2.5]
-    cov2 = [[0.2,0.],[0., 0.2]]
-
-    dist1 = NormalDistribution(mean1, cov1)
-    dist2 = NormalDistribution(mean2, cov2)
-    dist3 = NormalDistribution(mean3, cov2)
-    dist4 = NormalDistribution(mean4, cov2)
-    dist5 = NormalDistribution(mean5, cov2)
+    nPosData1 = 850
+    nPosData2 = 150
+    r_mean1 = 2.5
+    r_var1 = 0.5
+    r_mean2 = 0.75
+    r_var2 = 0.2
 
     NEG_X = np.r_[
-            dist1.create(nPosData1),
-            dist2.create(nPosData2/4),
-            dist3.create(nPosData2/4),
-            dist4.create(nPosData2/4),
-            dist5.create(nPosData2/4),
+            circleDist(r_mean1, r_var1, nPosData1),
+            circleDist(r_mean2, r_var2, nPosData2),
         ]
 
     #create POS_X
-    nNegData = 52
-
-    mean1 = [-1.5, -1.5]
-    mean2 = [1.5, -1.5]
-    mean3 = [-1.5, 1.5]
-    mean4 = [1.5, 1.5]
-    cov = [[0.1,0.],[0., 0.1]]
-
-    dist1 = NormalDistribution(mean1, cov)
-    dist2 = NormalDistribution(mean2, cov)
-    dist3 = NormalDistribution(mean3, cov)
-    dist4 = NormalDistribution(mean4, cov)
+    nNegData = 100
+    r_mean1 = 1.5
+    r_var1 = 0.2
 
     POS_X = np.r_[
-            dist1.create(nNegData/4),
-            dist2.create(nNegData/4),
-            dist3.create(nNegData/4),
-            dist4.create(nNegData/4),
+            circleDist(r_mean1, r_var1, nNegData),
         ]
 
+    #adjust the space between subplots
+    plt.subplots_adjust(hspace=0.3)
+
     #plot examples
-    plt.subplot(211)
+    plt.subplot(221)
     plt.axis(rect)
     plt.scatter(NEG_X[:,0], NEG_X[:,1], c='b', linewidths=linewidths)
     plt.scatter(POS_X[:,0], POS_X[:,1], c='r', linewidths=linewidths)
 
-    #plot weighted examples
+    #plot weighted examples by GaussKernel
+    #--------------------------------------------------
     gk = GaussKernel(beta)
 
     NEG_gram = gk.gram(NEG_X)
@@ -105,7 +93,62 @@ if __name__ == '__main__':
     POS_gram = gk.gram(POS_X)
     POS_membership = np.sum(POS_gram, axis=0) / float(POS_gram.shape[0])
 
-    plt.subplot(212)
+    plt.subplot(222)
+    plt.title("Gaussian Kernel (beta=%.2f)" % beta)
+    plt.axis(rect)
+    plt.scatter(
+            NEG_X[:,0], NEG_X[:,1],
+            s=scale*regularize(NEG_membership),
+            c=convert2monogradation(NEG_membership, RGB='B', alpha=alpha),
+            linewidths=linewidths
+        )
+    ratio = (NEG_gram.shape[0] / POS_gram.shape[0])
+    plt.scatter(
+            POS_X[:,0], POS_X[:,1],
+            s=ratio*scale*regularize(POS_membership),
+            c=convert2monogradation(ratio*POS_membership, RGB='R', alpha=alpha),
+            linewidths=linewidths
+        )
+
+    #plot weighted examples by PolyKernel
+    #--------------------------------------------------
+    pk = PolyKernel(2, 0)
+    npk = NormalizedKernel(pk)
+
+    NEG_gram = npk.gram(NEG_X)
+    NEG_membership = np.sum(NEG_gram, axis=0) / float(NEG_gram.shape[0])
+    POS_gram = npk.gram(POS_X)
+    POS_membership = np.sum(POS_gram, axis=0) / float(POS_gram.shape[0])
+
+    plt.subplot(223)
+    plt.title("poly kernel (d=2, c=0.00)")
+    plt.axis(rect)
+    plt.scatter(
+            NEG_X[:,0], NEG_X[:,1],
+            s=scale*regularize(NEG_membership),
+            c=convert2monogradation(NEG_membership, RGB='B', alpha=alpha),
+            linewidths=linewidths
+        )
+    ratio = (NEG_gram.shape[0] / POS_gram.shape[0])
+    plt.scatter(
+            POS_X[:,0], POS_X[:,1],
+            s=ratio*scale*regularize(POS_membership),
+            c=convert2monogradation(ratio*POS_membership, RGB='R', alpha=alpha),
+            linewidths=linewidths
+        )
+
+    #plot weighted examples by High-dimensional PolyKernel
+    #--------------------------------------------------
+    pk = PolyKernel(32, 0)
+    npk = NormalizedKernel(pk)
+
+    NEG_gram = npk.gram(NEG_X)
+    NEG_membership = np.sum(NEG_gram, axis=0) / float(NEG_gram.shape[0])
+    POS_gram = npk.gram(POS_X)
+    POS_membership = np.sum(POS_gram, axis=0) / float(POS_gram.shape[0])
+
+    plt.subplot(224)
+    plt.title("poly kernel (d=32, c=0.00)")
     plt.axis(rect)
     plt.scatter(
             NEG_X[:,0], NEG_X[:,1],
