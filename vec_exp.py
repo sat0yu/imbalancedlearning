@@ -32,9 +32,9 @@ def multiproc(args):
     res = []
     for _C in rough_C:
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
-        clf.fit(X, label)
-        predict = clf.predict(Y)
+        # clf = svm.SVC(kernel='rbf', gamma=beta, C=_C)
+        # clf.fit(X, label)
+        # predict = clf.predict(Y)
         ## </SVM>
 
         ## <Differenterrorcosts>
@@ -47,6 +47,7 @@ def multiproc(args):
         predict = clf.predict(mat, precomputed=True)
         ## </Kernelprobabilityfuzzysvm>
 
+        # print( (_C,)+evaluation(predict, answer) )
         res.append( (_C,)+evaluation(predict, answer) )
 
     return res
@@ -108,8 +109,8 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
         # classify using searched params
 
         ## <SVM>
-        clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
-        clf.fit(X, label)
+        # clf = svm.SVC(kernel='rbf', gamma=opt_beta, C=opt_C)
+        # clf.fit(X, label)
         ## </SVM>
 
         ## <Differenterrorcosts>
@@ -133,34 +134,6 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     print "[%s]: acc:%f,\taccP:%f,\taccN:%f,\tg:%f,\tg_from_ave.:%f" % (dataname,acc,accP,accN,g,_g)
 
 if __name__ == '__main__':
-    ecoli = Dataset("data/ecoli.rplcd", label_index=-1, usecols=range(1,9), dtype=np.float)
-    ecoli.raw = np.c_[ecoli.normalize(), ecoli.label]
-    procedure('ecoli', ecoli.raw, label_index=-1)
-
-    transfusion = Dataset("data/transfusion.rplcd", label_index=-1, delimiter=',', skiprows=1, dtype=np.float)
-    transfusion.raw = np.c_[transfusion.normalize(), transfusion.label]
-    procedure('transfusion', transfusion.raw, label_index=-1)
-
-    haberman = Dataset("data/haberman.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    haberman.raw = np.c_[haberman.normalize(), haberman.label]
-    procedure('haberman', haberman.raw, label_index=-1)
-
-    pima = Dataset("data/pima-indians-diabetes.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    pima.raw = np.c_[pima.normalize(), pima.label]
-    procedure('pima', pima.raw, label_index=-1)
-
-    yeast = Dataset("data/yeast.rplcd", label_index=-1, usecols=range(1,10), dtype=np.float)
-    yeast.raw = np.c_[yeast.normalize(), yeast.label]
-    procedure('yeast', yeast.raw, label_index=-1)
-
-    page = Dataset("data/page-blocks.rplcd", label_index=-1, dtype=np.float)
-    page.raw = np.c_[page.normalize(), page.label]
-    procedure('page-block', page.raw, label_index=-1)
-
-    abalone = Dataset("data/abalone.rplcd", label_index=-1, usecols=range(1,9), delimiter=',', dtype=np.float)
-    abalone.raw = np.c_[abalone.normalize(), abalone.label]
-    procedure('abalone', abalone.raw, label_index=-1)
-
-    waveform = Dataset("data/waveform.rplcd", label_index=-1, delimiter=',', dtype=np.float)
-    waveform.raw = np.c_[waveform.normalize(), waveform.label]
-    procedure('waveform', waveform.raw, label_index=-1)
+    lp5 = Dataset("data/lp5.data", label_index=0, delimiter=',', dtype=np.float)
+    lp5.raw = np.c_[lp5.normalize(), lp5.label]
+    procedure('lp5', lp5.raw, label_index=-1, shuffle=True)

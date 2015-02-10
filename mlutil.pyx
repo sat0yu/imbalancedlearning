@@ -47,6 +47,9 @@ def createImbalanceClassDataset(dataset, ratio=1., label_index=0, label=[1,-1]):
     return np.r_[nDataset[:nN], pDataset[:pN]]
 
 def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
+    # if given shuffle flag
+    if shuffle: np.random.shuffle(dataset)
+
     pDataset = dataset[dataset[:,label_index]==label[0]]
     pw = len(pDataset) / nCV
     nDataset = dataset[dataset[:,label_index]==label[1]]
@@ -65,11 +68,6 @@ def dataset_iterator(dataset, nCV, label_index=0, label=[1,-1], shuffle=False):
         else:
             X = np.r_[pDataset[pPiv:], nDataset[nPiv:]]
             Y = np.r_[pDataset[:pPiv], nDataset[:nPiv]]
-
-        # if given shuffle flag
-        if shuffle is True:
-            np.random.shuffle(X)
-            np.random.shuffle(Y)
 
         # slice out label(answer) from X(Y)
         lbl, ans = X[:,label_index], Y[:,label_index]
