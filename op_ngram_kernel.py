@@ -62,7 +62,7 @@ def procedure(dataname, dataset, nCV=5, **kwargs):
     # ready parameter search space
     rough_C = [10**i for i in range(10)]
     narrow_space = np.linspace(-0.75, 0.75, num=7)
-    ngram_param = 5
+    ngram_param = 3
     # cross varidation
     scores = []
     for i_CV, (Y,answer,X,label) in enumerate( dataset_iterator(dataset, nCV, **kwargs) ):

@@ -1,26 +1,26 @@
 lp5(0/5): train samples (pos:212, neg:576)
 lp5(0/5): test samples (pos:52, neg:144)
-[rough search] opt_C:100.0,	g:0.701255
-[narrow search] opt_C:100.0,	g:0.701255
-[optimized] acc:0.846939,	accP:0.750000,	accN:0.881944,	g:0.813301
+[rough search] opt_C:1000000000.0,	g:0.593104
+[narrow search] opt_C:1778279410.04,	g:0.600164
+[optimized] acc:0.816327,	accP:0.423077,	accN:0.958333,	g:0.636749
 lp5(1/5): train samples (pos:212, neg:576)
 lp5(1/5): test samples (pos:52, neg:144)
-[rough search] opt_C:10.0,	g:0.738061
-[narrow search] opt_C:5.6234132519,	g:0.742191
-[optimized] acc:0.826531,	accP:0.615385,	accN:0.902778,	g:0.745356
+[rough search] opt_C:1000000000.0,	g:0.638007
+[narrow search] opt_C:1000000000.0,	g:0.638007
+[optimized] acc:0.760204,	accP:0.384615,	accN:0.895833,	g:0.586985
 lp5(2/5): train samples (pos:212, neg:576)
 lp5(2/5): test samples (pos:52, neg:144)
-[rough search] opt_C:10.0,	g:0.745280
-[narrow search] opt_C:31.6227766017,	g:0.757500
-[optimized] acc:0.775510,	accP:0.653846,	accN:0.819444,	g:0.731977
+[rough search] opt_C:1000000000.0,	g:0.616109
+[narrow search] opt_C:1778279410.04,	g:0.631920
+[optimized] acc:0.704082,	accP:0.230769,	accN:0.875000,	g:0.449359
 lp5(3/5): train samples (pos:212, neg:576)
 lp5(3/5): test samples (pos:52, neg:144)
-[rough search] opt_C:10.0,	g:0.728970
-[narrow search] opt_C:5.6234132519,	g:0.741866
-[optimized] acc:0.816327,	accP:0.596154,	accN:0.895833,	g:0.730790
+[rough search] opt_C:1000000.0,	g:0.578436
+[narrow search] opt_C:5623413.2519,	g:0.596468
+[optimized] acc:0.801020,	accP:0.461538,	accN:0.923611,	g:0.652903
 lp5(4/5): train samples (pos:208, neg:576)
 lp5(4/5): test samples (pos:56, neg:144)
-[rough search] opt_C:10.0,	g:0.719992
-[narrow search] opt_C:3.16227766017,	g:0.735326
-[optimized] acc:0.785000,	accP:0.535714,	accN:0.881944,	g:0.687365
-[lp5]: acc:0.810061,	accP:0.630220,	accN:0.876389,	g:0.741758,	g_from_ave.:0.743181
+[rough search] opt_C:10000000.0,	g:0.617251
+[narrow search] opt_C:10000000.0,	g:0.617251
+[optimized] acc:0.765000,	accP:0.482143,	accN:0.875000,	g:0.649519
+[lp5]: acc:0.769327,	accP:0.396429,	accN:0.905556,	g:0.595103,	g_from_ave.:0.599156
